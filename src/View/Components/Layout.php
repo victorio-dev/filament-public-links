@@ -8,6 +8,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 use Victorio\PublicLinks\Data\Branding;
 use Victorio\PublicLinks\Models\PublicLink;
+use Victorio\PublicLinks\Support\PackageView;
 use Victorio\PublicLinks\Support\PublicLinksConfig;
 
 /**
@@ -41,10 +42,6 @@ final class Layout extends Component
 
     public function render(): View
     {
-        // A package view namespace Larastan cannot see; it is registered by hasViews().
-        /** @var view-string $view */
-        $view = 'filament-public-links::components.layout';
-
-        return view($view);
+        return PackageView::make('components.layout');
     }
 }

@@ -341,6 +341,22 @@ Version check (rule C1, B4): Filament 5 + Livewire 4 were read in `playground/ve
 (`RelationManager`, `getTenant()`, `CanBeCopied`, Livewire `js()`). The Filament 4 + Livewire 3
 signatures are verified in step 4 before that code is written.
 
+Learned in step 4 (verified against Filament 4.15 / Livewire 3.8 and Filament 5.10 / Livewire 4.4):
+
+- Every API used exists with the same signature in both; nothing depends on a Livewire 3/4
+  difference. Copying is plain Alpine in the modal, not Livewire `js()`.
+- The relation manager works with `StringKeyedMorphMany` unchanged: Filament builds the table
+  query from `$relationship->getQuery()`, which already carries the string-keyed constraint.
+- Showing the URL after creating a link re-mounts the same action. Filament only treats a mounted
+  action as replaced when its name or context changes, and resets the action object's arguments
+  after the call, so the action adds a context marker and reads its "show URL" state from the
+  component's mounted action entry. The link key in that entry is only trusted when the link
+  belongs to the owner record (the client can mount actions with any arguments).
+- Hidden actions cannot be mounted (`isDisabled()` includes `isHidden()`), so authorization is
+  enforced by `visible()` and `authorize()` alike; tests also send hand-crafted mount calls.
+- In tests, `assertMountedActionModalSee()` reads modal content on both versions (Filament 5
+  renders action modals in a Livewire 4 partial).
+
 ## g) Config — `config/filament-public-links.php`
 
 ```php

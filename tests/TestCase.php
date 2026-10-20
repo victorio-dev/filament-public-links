@@ -7,10 +7,12 @@ namespace Victorio\PublicLinks\Tests;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Victorio\PublicLinks\Facades\PublicLinks;
 use Victorio\PublicLinks\PublicLinksServiceProvider;
+use Victorio\PublicLinks\Tests\Fixtures\Filament\TestPanelProvider;
 use Victorio\PublicLinks\Tests\Fixtures\Handlers\AcceptRecord;
 use Victorio\PublicLinks\Tests\Fixtures\Handlers\ShowRecord;
 use Victorio\PublicLinks\Tests\Fixtures\IntRecord;
 use Victorio\PublicLinks\Tests\Fixtures\UlidRecord;
+use Victorio\PublicLinks\Tests\Fixtures\User;
 use Victorio\PublicLinks\Tests\Fixtures\UuidRecord;
 
 abstract class TestCase extends Orchestra
@@ -57,6 +59,7 @@ abstract class TestCase extends Orchestra
             \Livewire\LivewireServiceProvider::class,
             \RyanChandler\BladeCaptureDirective\BladeCaptureDirectiveServiceProvider::class,
             PublicLinksServiceProvider::class,
+            TestPanelProvider::class,
         ];
     }
 
@@ -67,6 +70,7 @@ abstract class TestCase extends Orchestra
     {
         // Links store an encrypted copy of their token (ADR-0008), so the suite needs an app key.
         $app['config']->set('app.key', 'base64:'.base64_encode(str_repeat('k', 32)));
+        $app['config']->set('auth.providers.users.model', User::class);
 
         // DB_CONNECTION=mysql|pgsql (`make test DB=...`, CI) keeps Testbench's own connection of
         // that name, whose config file reads DB_HOST, DB_DATABASE and friends. Without it

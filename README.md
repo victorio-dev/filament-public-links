@@ -16,18 +16,49 @@ composer require victorio/filament-public-links
 php artisan filament-public-links:install   # publishes config and migrations, offers to migrate
 ```
 
-## Panel registration
+## Filament
+
+Add the relation manager to any resource whose model uses `HasPublicLinks`:
+
+```php
+use Victorio\PublicLinks\Filament\RelationManagers\PublicLinksRelationManager;
+
+public static function getRelations(): array
+{
+    return [PublicLinksRelationManager::class];
+}
+```
+
+It lists the record's links (purpose, status, expiry, uses, opens), creates new ones (purpose,
+expiry, usage limit) and shows the URL once with a copy button, copies an existing link's URL
+on demand, revokes one or several links, and shows each link's access log.
+
+Prefer a single button? Put `IssuePublicLinkAction` on a resource page or table instead:
+
+```php
+use Victorio\PublicLinks\Filament\Actions\IssuePublicLinkAction;
+
+protected function getHeaderActions(): array
+{
+    return [IssuePublicLinkAction::make()];
+}
+```
+
+Permissions follow the owner model's policy: `view` to see its links and their access log,
+`update` to create, copy and revoke them; for a model without a policy, the panel's
+`strictAuthorization()` setting decides, as everywhere in Filament.
+
+The panel plugin is optional; register it only to change the defaults:
 
 ```php
 use Victorio\PublicLinks\PublicLinksPlugin;
-use Filament\Panel;
 
-public function panel(Panel $panel): Panel
-{
-    return $panel->plugins([
-        PublicLinksPlugin::make(),
-    ]);
-}
+$panel->plugins([
+    PublicLinksPlugin::make()
+        ->expiryOptions([1, 7, 30])                 // days offered in the form
+        ->defaultExpiry(7)
+        ->purposeLabels(['view' => 'View quote']),  // shown instead of the raw purpose
+]);
 ```
 
 ## Configuration

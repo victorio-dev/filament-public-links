@@ -50,6 +50,13 @@ marked `@internal`.
   default; a resolver bound in `branding.resolver` receives the link, for per-tenant branding.
   `Branding::make()` cleans every value (colours, logo URLs, e-mail addresses).
 - The 404/410 pages use the layout; 410 pages offer `contact_email` when it is set.
+- Filament: `PublicLinksRelationManager` (status, expiry, uses, opens; status filter; new link,
+  copy link, revoke, bulk revoke, access log) and `IssuePublicLinkAction` for any resource page
+  or table. The URL is shown once after creating a link and decrypted only when "Copy link" is
+  clicked; copying falls back to selecting the text when the Clipboard API is unavailable.
+  Permissions follow the owner record's `view` / `update` policy; with Filament tenancy only the
+  current tenant's links are listed. Optional `PublicLinksPlugin` options: `expiryOptions()`,
+  `defaultExpiry()`, `purposeLabels()`. English and Hungarian labels.
 - `php artisan filament-public-links:install`; publish tags `filament-public-links-config`,
   `-migrations`, `-translations`, `-views`.
 

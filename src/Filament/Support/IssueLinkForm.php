@@ -1,0 +1,167 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Victorio\PublicLinks\Filament\Support;
+
+use Carbon\CarbonImmutable;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Component;
+use Filament\Schemas\Components\Utilities\Get;
+use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
+use Victorio\PublicLinks\Data\IssuedPublicLink;
+use Victorio\PublicLinks\PublicLinkRegistry;
+use Victorio\PublicLinks\PublicLinksPlugin;
+use Victorio\PublicLinks\Support\PublicLinksConfig;
+
+/**
+ * The "new public link" form and what submitting it does; shared by the relation manager and
+ * IssuePublicLinkAction.
+ *
+ * @internal
+ */
+final class IssueLinkForm
+{
+    public const string CUSTOM_EXPIRY = 'custom';
+
+    /**
+     * @return array<int, Component|\Filament\Forms\Components\Field>
+     */
+    public static function schema(Model $owner): array
+    {
+        $plugin = PublicLinksPlugin::current();
+        $purposes = app(PublicLinkRegistry::class)->purposesFor($owner->getMorphClass());
+        $maxTtlDays = PublicLinksConfig::maxTtlDays();
+        $expiryOptions = self::expiryOptions($plugin->getExpiryOptions(), $maxTtlDays);
+        $defaultExpiry = array_key_exists((string) $plugin->getDefaultExpiry(), $expiryOptions)
+            ? (string) $plugin->getDefaultExpiry()
+            : (string) array_key_first($expiryOptions);
+        $notPermanent = static fn (Get $get): bool => ! $get('permanent');
+
+        $purposeField = count($purposes) === 1
+            ? Hidden::make('purpose')->default($purposes[0])
+            : Select::make('purpose')
+                ->label(self::label('form.purpose'))
+                ->options(array_combine($purposes, array_map($plugin->getPurposeLabel(...), $purposes)))
+                ->default($purposes[0] ?? null)
+                ->required();
+
+        $today = CarbonImmutable::today();
+
+        return [
+            $purposeField,
+            Toggle::make('permanent')
+                ->label(self::label('form.permanent'))
+                ->visible(PublicLinksConfig::allowPermanent())
+                ->live(),
+            Select::make('expiry')
+                ->label(self::label('form.expiry'))
+                ->options($expiryOptions)
+                ->default($defaultExpiry)
+                ->required($notPermanent)
+                ->visible($notPermanent)
+                ->live(),
+            DatePicker::make('expires_on')
+                ->label(self::label('form.expires_on'))
+                ->minDate($today->addDay())
+                ->maxDate($maxTtlDays === null ? null : $today->addDays($maxTtlDays))
+                ->rules(array_values(array_filter([
+                    'after:today',
+                    $maxTtlDays === null ? null : 'before_or_equal:'.$today->addDays($maxTtlDays)->toDateString(),
+                ])))
+                ->required(static fn (Get $get): bool => ! $get('permanent') && $get('expiry') === self::CUSTOM_EXPIRY)
+                ->visible(static fn (Get $get): bool => ! $get('permanent') && $get('expiry') === self::CUSTOM_EXPIRY),
+            TextInput::make('max_uses')
+                ->label(self::label('form.max_uses'))
+                ->helperText(self::label('form.max_uses_help'))
+                ->integer()
+                ->minValue(1)
+                ->nullable(),
+            TextInput::make('label')
+                ->label(self::label('form.label'))
+                ->helperText(self::label('form.label_help'))
+                ->maxLength(255)
+                ->nullable(),
+        ];
+    }
+
+    /**
+     * Issues the link from the submitted form data, for the current user.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public static function issue(Model $owner, array $data): IssuedPublicLink
+    {
+        if (! method_exists($owner, 'publicLink')) {
+            throw new InvalidArgumentException(sprintf('%s does not use the HasPublicLinks trait.', $owner::class));
+        }
+
+        $purpose = is_string($data['purpose'] ?? null) ? $data['purpose'] : '';
+        $pending = $owner->publicLink($purpose);
+
+        if (($data['permanent'] ?? false) === true) {
+            $pending->permanent();
+        } elseif (($data['expiry'] ?? null) === self::CUSTOM_EXPIRY && is_string($data['expires_on'] ?? null)) {
+            // Valid through the chosen day, but never past max_ttl_days from now.
+            $expiresAt = CarbonImmutable::parse($data['expires_on'])->endOfDay();
+            $maxTtlDays = PublicLinksConfig::maxTtlDays();
+
+            if ($maxTtlDays !== null && $expiresAt->greaterThan(CarbonImmutable::now()->addDays($maxTtlDays))) {
+                $expiresAt = CarbonImmutable::now()->addDays($maxTtlDays);
+            }
+
+            $pending->expiresAt($expiresAt);
+        } elseif (is_numeric($data['expiry'] ?? null)) {
+            $pending->expiresIn(days: (int) $data['expiry']);
+        }
+
+        $maxUses = $data['max_uses'] ?? null;
+        $label = $data['label'] ?? null;
+
+        return $pending
+            ->maxUses(is_numeric($maxUses) ? (int) $maxUses : null)
+            ->label(is_string($label) && trim($label) !== '' ? trim($label) : null)
+            ->createdBy(self::user())
+            ->issue();
+    }
+
+    /**
+     * Keys are the day counts (PHP turns numeric string keys into ints) and "custom".
+     *
+     * @param  list<int>  $days
+     * @return array<int|string, string>
+     */
+    private static function expiryOptions(array $days, ?int $maxTtlDays): array
+    {
+        $options = [];
+
+        foreach ($days as $day) {
+            if ($maxTtlDays === null || $day <= $maxTtlDays) {
+                $options[(string) $day] = trans_choice('filament-public-links::filament-public-links.filament.form.expiry_days', $day, ['count' => $day]);
+            }
+        }
+
+        $options[self::CUSTOM_EXPIRY] = self::label('form.expiry_custom');
+
+        return $options;
+    }
+
+    private static function user(): ?Model
+    {
+        $user = auth()->user();
+
+        return $user instanceof Model ? $user : null;
+    }
+
+    public static function label(string $key): string
+    {
+        $label = __('filament-public-links::filament-public-links.filament.'.$key);
+
+        return is_string($label) ? $label : $key;
+    }
+}
