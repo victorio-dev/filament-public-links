@@ -13,8 +13,8 @@ it('serves and builds links under the configured route prefix, without any model
 
     expect($issued->url)->toBe(url('share/'.$issued->token))
         ->and($issued->link->url())->toBe($issued->url)
-        ->and($issued->url)->not->toContain($issued->link->id)
-        ->and($issued->url)->not->toContain('/'.$record->id);
+        // The path is the prefix and the token, nothing else: no link or model id (rule E2).
+        ->and(parse_url($issued->url, PHP_URL_PATH))->toBe('/share/'.$issued->token);
 
     get('/share/'.$issued->token)->assertOk()->assertSee('Record: Quote');
     get('/p/'.$issued->token)->assertNotFound();
