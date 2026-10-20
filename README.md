@@ -37,16 +37,23 @@ Access log rows are pruned by Laravel, so schedule `model:prune` (retention: 90 
 
 ```php
 // routes/console.php
-Schedule::command('model:prune', ['--model' => [\Victorio\PublicLinks\Models\PublicLinkAccess::class]])->daily();
+use Illuminate\Support\Facades\Schedule;
+use Victorio\PublicLinks\Models\PublicLinkAccess;
+
+Schedule::command('model:prune', ['--model' => [PublicLinkAccess::class]])->daily();
 ```
 
 ## Quick start
 
 ```php
+use Illuminate\Database\Eloquent\Model;
+use Victorio\PublicLinks\Concerns\HasPublicLinks;
+use Victorio\PublicLinks\Facades\PublicLinks;
+
 // 1. The model
 class Quote extends Model
 {
-    use \Victorio\PublicLinks\Concerns\HasPublicLinks;
+    use HasPublicLinks;
 }
 
 // 2. What the link shows — in a service provider's boot()
@@ -60,7 +67,11 @@ A handler renders the page; the package has already checked the token, expiry, r
 usage limit, written the access row and loaded the model:
 
 ```php
-final class ShowQuote extends \Victorio\PublicLinks\Handlers\PublicLinkHandlerBase
+use Symfony\Component\HttpFoundation\Response;
+use Victorio\PublicLinks\Data\PublicLinkVisit;
+use Victorio\PublicLinks\Handlers\PublicLinkHandlerBase;
+
+final class ShowQuote extends PublicLinkHandlerBase
 {
     public function show(PublicLinkVisit $visit): Response
     {
@@ -96,9 +107,11 @@ counts as a use.
 Add the relation manager to any resource whose model uses `HasPublicLinks`:
 
 ```php
+use Victorio\PublicLinks\Filament\RelationManagers\PublicLinksRelationManager;
+
 public static function getRelations(): array
 {
-    return [\Victorio\PublicLinks\Filament\RelationManagers\PublicLinksRelationManager::class];
+    return [PublicLinksRelationManager::class];
 }
 ```
 
@@ -137,8 +150,10 @@ current tenant's links are listed and new links belong to the current tenant.
 **The panel plugin is optional** — register it only to change the defaults:
 
 ```php
+use Victorio\PublicLinks\PublicLinksPlugin;
+
 $panel->plugins([
-    \Victorio\PublicLinks\PublicLinksPlugin::make()
+    PublicLinksPlugin::make()
         ->expiryOptions([1, 7, 30])                 // days offered in the form
         ->defaultExpiry(7)
         ->purposeLabels(['view' => 'View quote'])   // wins over every other purpose label
@@ -177,25 +192,31 @@ Start at the top of this list and stop at the first step that does the job.
 2. **Translations** — every user-facing string, in English and Hungarian:
    `php artisan vendor:publish --tag="filament-public-links-translations"`.
 3. **Swappable classes** — brand per tenant with a resolver bound in `branding.resolver`; it
-   receives the link (null on the 404 page) and returns a `Branding`:
-
-   ```php
-   final class TenantBranding implements \Victorio\PublicLinks\Contracts\BrandingResolver
-   {
-       public function resolve(?PublicLink $link): Branding
-       {
-           $team = Team::find($link?->tenant_id);
-
-           return Branding::make(name: $team->name ?? config('app.name'), logoUrl: $team?->logo_url);
-       }
-   }
-   ```
-
-   The models are swappable too (`models.link`, `models.access`).
+   receives the link (null on the 404 page) and returns a `Branding` (example below). The models
+   are swappable too (`models.link`, `models.access`).
 4. **Views — last resort.** `php artisan vendor:publish --tag="filament-public-links-views"`.
 
    > A published view is a copy: it no longer receives the package's fixes and new features.
    > Re-check it after every upgrade, and prefer the steps above whenever they can do the job.
+
+A per-tenant branding resolver:
+
+```php
+use App\Models\Team;
+use Victorio\PublicLinks\Contracts\BrandingResolver;
+use Victorio\PublicLinks\Data\Branding;
+use Victorio\PublicLinks\Models\PublicLink;
+
+final class TenantBranding implements BrandingResolver
+{
+    public function resolve(?PublicLink $link): Branding
+    {
+        $team = Team::find($link?->tenant_id);
+
+        return Branding::make(name: $team->name ?? config('app.name'), logoUrl: $team?->logo_url);
+    }
+}
+```
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/victorio-dev/filament-public-links/main/docs/images/gone-410-dark.jpg">
