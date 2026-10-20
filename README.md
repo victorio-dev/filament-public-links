@@ -9,11 +9,11 @@ a branded public page and a Filament UI. Status: in design, see [docs/design.md]
 
 ## Installation
 
+Add the private repository and your licence credentials to the host app, then:
+
 ```bash
 composer require victorio/filament-public-links
-php artisan vendor:publish --tag="filament-public-links-config"
-php artisan vendor:publish --tag="filament-public-links-migrations"
-php artisan migrate
+php artisan filament-public-links:install   # publishes config and migrations, offers to migrate
 ```
 
 ## Panel registration
@@ -35,13 +35,29 @@ public function panel(Panel $panel): Panel
 Every model, table name and swappable class lives in `config/filament-public-links.php`. TODO document
 the keys that matter: models, tables, tenancy, public routes, tokens, access log.
 
-## Translations
+## Customization
 
-English is the base language, Hungarian ships alongside it. Override either by publishing them:
+Start at the top of this list and stop at the first step that does the job.
 
-```bash
-php artisan vendor:publish --tag="filament-public-links-translations"
-```
+1. **Config** — `config/filament-public-links.php`. TODO the keys users change most: branding (name,
+   logo, colours), behaviour switches, defaults.
+2. **Translations** — every user-facing string. English is the base language, Hungarian ships
+   alongside it:
+
+   ```bash
+   php artisan vendor:publish --tag="filament-public-links-translations"
+   ```
+
+3. **Swappable classes** — TODO the models, resolvers or providers bound in config, and the
+   contract each replacement implements.
+4. **Views — last resort.**
+
+   ```bash
+   php artisan vendor:publish --tag="filament-public-links-views"
+   ```
+
+   > A published view is a copy: it no longer receives the package's fixes and new features.
+   > Re-check it after every upgrade, and prefer the steps above whenever they can do the job.
 
 ## Multi-tenancy
 
