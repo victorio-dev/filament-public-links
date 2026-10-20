@@ -15,7 +15,17 @@ return [
         'powered_by' => 'Powered by Victorio Public Links',
     ],
 
+    'purposes' => [
+        'view' => 'View',
+        'accept' => 'Accept',
+        'download' => 'Download',
+    ],
+
     'filament' => [
+        // PHP date() format of every time the package shows; PublicLinksPlugin::dateTimeFormat()
+        // overrides it.
+        'date_time_format' => 'M j, Y H:i',
+
         'relation_manager' => [
             'title' => 'Public links',
             'empty' => 'No public links yet.',
@@ -61,6 +71,9 @@ return [
                 'copied' => 'Copied',
                 'manual' => 'Press Ctrl+C (Cmd+C on a Mac) to copy the selected link.',
                 'unavailable' => 'This link can no longer be shown: the application key changed. Revoke it and create a new one if needed.',
+                'expires' => 'Expires: :date',
+                'never_expires' => 'Never expires',
+                'usage' => 'Usage limit: :max (used: :used)',
                 'close' => 'Close',
             ],
             'copy' => [

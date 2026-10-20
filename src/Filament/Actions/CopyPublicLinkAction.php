@@ -35,7 +35,7 @@ final class CopyPublicLinkAction extends Action
             ->color('gray')
             ->modalHeading(IssueLinkForm::label('actions.url.heading'))
             ->modalContent(static fn (PublicLink $record): View => PackageView::make('filament.url',
-                ['url' => $record->url()],
+                ['link' => $record],
             ))
             ->modalSubmitAction(false)
             ->modalCancelActionLabel(IssueLinkForm::label('actions.url.close'))

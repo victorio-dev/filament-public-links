@@ -21,7 +21,7 @@
             <tbody>
                 @foreach ($accesses as $access)
                     <tr style="border-top: 1px solid rgba(127, 127, 127, .25);">
-                        <td style="padding: .5rem; white-space: nowrap;">{{ $access->accessed_at->toDateTimeString() }}</td>
+                        <td style="padding: .5rem; white-space: nowrap;">{{ \Victorio\PublicLinks\Filament\Support\DisplayDate::format($access->accessed_at) }}</td>
                         <td style="padding: .5rem;">{{ $t('outcomes.'.$access->outcome) }}</td>
                         <td style="padding: .5rem;">{{ $access->action ?? '—' }}</td>
                         <td style="padding: .5rem;" title="{{ $access->user_agent }}">{{ \Illuminate\Support\Str::limit((string) $access->user_agent, 80) }}</td>

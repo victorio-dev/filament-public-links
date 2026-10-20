@@ -21,6 +21,7 @@ final class Authorizer
 
     public const string UPDATE = 'update';
 
+    // Actions use this in both visible() and authorize(); see design.md "Filament internals" #5.
     public static function allows(string $ability, ?Model $owner): bool
     {
         if ($owner === null) {

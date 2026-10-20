@@ -12,6 +12,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Livewire\Attributes\On;
 use Victorio\PublicLinks\Enums\PublicLinkStatus;
 use Victorio\PublicLinks\Filament\Actions\CopyPublicLinkAction;
 use Victorio\PublicLinks\Filament\Actions\IssuePublicLinkAction;
@@ -19,9 +20,10 @@ use Victorio\PublicLinks\Filament\Actions\RevokePublicLinkAction;
 use Victorio\PublicLinks\Filament\Actions\RevokePublicLinksBulkAction;
 use Victorio\PublicLinks\Filament\Actions\ViewAccessLogAction;
 use Victorio\PublicLinks\Filament\Support\Authorizer;
+use Victorio\PublicLinks\Filament\Support\DisplayDate;
 use Victorio\PublicLinks\Filament\Support\IssueLinkForm;
+use Victorio\PublicLinks\Filament\Support\PurposeLabel;
 use Victorio\PublicLinks\Models\PublicLink;
-use Victorio\PublicLinks\PublicLinksPlugin;
 use Victorio\PublicLinks\Support\ModelKey;
 use Victorio\PublicLinks\Support\PublicLinksConfig;
 
@@ -38,7 +40,22 @@ use Victorio\PublicLinks\Support\PublicLinksConfig;
  */
 final class PublicLinksRelationManager extends RelationManager
 {
+    /**
+     * Dispatched after a link is created or revoked anywhere (a page action, another table), so
+     * every links table on the page shows it without a reload. Dispatch it yourself after
+     * changing links in your own code: `$livewire->dispatch(PublicLinksRelationManager::LINKS_CHANGED)`.
+     */
+    public const string LINKS_CHANGED = 'filament-public-links::links-changed';
+
+    // A StringKeyedMorphMany; works because Filament queries it via getQuery(), see design.md
+    // "Filament internals" #6.
     protected static string $relationship = 'publicLinks';
+
+    /**
+     * Re-renders the table; Livewire runs a render after every event handler.
+     */
+    #[On(self::LINKS_CHANGED)]
+    public function refreshPublicLinks(): void {}
 
     public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
@@ -52,16 +69,14 @@ final class PublicLinksRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
-        $plugin = PublicLinksPlugin::current();
-
         return $table
-            ->recordTitle(static fn (PublicLink $record): string => $plugin->getPurposeLabel($record->purpose))
+            ->recordTitle(static fn (PublicLink $record): string => PurposeLabel::for($record->linkable_type, $record->purpose))
             ->modifyQueryUsing(static fn (Builder $query): Builder => self::scopeToTenant($query))
             ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('purpose')
                     ->label(IssueLinkForm::label('columns.purpose'))
-                    ->formatStateUsing(static fn (string $state): string => $plugin->getPurposeLabel($state)),
+                    ->formatStateUsing(static fn (PublicLink $record): string => PurposeLabel::for($record->linkable_type, $record->purpose)),
                 TextColumn::make('status')
                     ->label(IssueLinkForm::label('columns.status'))
                     ->state(static fn (PublicLink $record): string => $record->status()->value)
@@ -75,7 +90,7 @@ final class PublicLinksRelationManager extends RelationManager
                     }),
                 TextColumn::make('expires_at')
                     ->label(IssueLinkForm::label('columns.expires_at'))
-                    ->dateTime()
+                    ->formatStateUsing(static fn (PublicLink $record): ?string => DisplayDate::format($record->expires_at))
                     ->placeholder(IssueLinkForm::label('columns.never'))
                     ->sortable(),
                 TextColumn::make('use_count')
@@ -88,11 +103,12 @@ final class PublicLinksRelationManager extends RelationManager
                 TextColumn::make('last_opened_at')
                     ->label(IssueLinkForm::label('columns.last_opened_at'))
                     ->since()
+                    ->tooltip(static fn (PublicLink $record): ?string => DisplayDate::format($record->last_opened_at))
                     ->placeholder('—')
                     ->sortable(),
                 TextColumn::make('created_at')
                     ->label(IssueLinkForm::label('columns.created_at'))
-                    ->dateTime()
+                    ->formatStateUsing(static fn (PublicLink $record): ?string => DisplayDate::format($record->created_at))
                     ->sortable(),
             ])
             ->filters([

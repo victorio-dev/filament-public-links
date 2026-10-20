@@ -5,8 +5,10 @@
     or refuses to write.
 --}}
 @php
-    $t = fn (string $key): string => __('filament-public-links::filament-public-links.filament.actions.url.'.$key);
+    /** @var \Victorio\PublicLinks\Models\PublicLink|null $link */
+    $t = fn (string $key, array $replace = []): string => __('filament-public-links::filament-public-links.filament.actions.url.'.$key, $replace);
     $fieldId = 'fpl-url-'.\Illuminate\Support\Str::random(8);
+    $url = $link?->url();
 @endphp
 <div
     x-data="{
@@ -57,5 +59,16 @@
         </div>
 
         <p x-show="manual" x-cloak role="status" style="font-size: .875rem;">{{ $t('manual') }}</p>
+
+        <div style="font-size: .875rem;">
+            <p>
+                {{ $link->expires_at === null
+                    ? $t('never_expires')
+                    : $t('expires', ['date' => \Victorio\PublicLinks\Filament\Support\DisplayDate::format($link->expires_at)]) }}
+            </p>
+            @if ($link->max_uses !== null)
+                <p>{{ $t('usage', ['max' => $link->max_uses, 'used' => $link->use_count]) }}</p>
+            @endif
+        </div>
     @endif
 </div>

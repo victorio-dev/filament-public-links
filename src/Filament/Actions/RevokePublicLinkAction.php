@@ -6,6 +6,7 @@ namespace Victorio\PublicLinks\Filament\Actions;
 
 use Filament\Actions\Action;
 use Illuminate\Database\Eloquent\Model;
+use Victorio\PublicLinks\Filament\RelationManagers\PublicLinksRelationManager;
 use Victorio\PublicLinks\Filament\Support\Authorizer;
 use Victorio\PublicLinks\Filament\Support\IssueLinkForm;
 use Victorio\PublicLinks\Filament\Support\OwnerRecord;
@@ -41,9 +42,14 @@ final class RevokePublicLinkAction extends Action
                 Authorizer::UPDATE,
                 OwnerRecord::resolve($livewire, $record),
             ))
-            ->action(function (PublicLink $record): void {
+            ->action(function (PublicLink $record, mixed $livewire): void {
                 $user = auth()->user();
                 $record->revoke($user instanceof Model ? $user : null);
+
+                if (is_object($livewire) && method_exists($livewire, 'dispatch')) {
+                    $livewire->dispatch(PublicLinksRelationManager::LINKS_CHANGED);
+                }
+
                 $this->success();
             });
     }

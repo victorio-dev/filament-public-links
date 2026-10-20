@@ -12,6 +12,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Support\Facades\FilamentTimezone;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Victorio\PublicLinks\Data\IssuedPublicLink;
@@ -47,11 +48,15 @@ final class IssueLinkForm
             ? Hidden::make('purpose')->default($purposes[0])
             : Select::make('purpose')
                 ->label(self::label('form.purpose'))
-                ->options(array_combine($purposes, array_map($plugin->getPurposeLabel(...), $purposes)))
+                ->options(array_combine($purposes, array_map(
+                    static fn (string $purpose): string => PurposeLabel::for($owner->getMorphClass(), $purpose),
+                    $purposes,
+                )))
                 ->default($purposes[0] ?? null)
                 ->required();
 
-        $today = CarbonImmutable::today();
+        // "Today" for the date picker is today where the admin is (Filament's display timezone).
+        $today = CarbonImmutable::today(FilamentTimezone::get());
 
         return [
             $purposeField,
@@ -71,7 +76,7 @@ final class IssueLinkForm
                 ->minDate($today->addDay())
                 ->maxDate($maxTtlDays === null ? null : $today->addDays($maxTtlDays))
                 ->rules(array_values(array_filter([
-                    'after:today',
+                    'after_or_equal:'.$today->addDay()->toDateString(),
                     $maxTtlDays === null ? null : 'before_or_equal:'.$today->addDays($maxTtlDays)->toDateString(),
                 ])))
                 ->required(static fn (Get $get): bool => ! $get('permanent') && $get('expiry') === self::CUSTOM_EXPIRY)
@@ -107,8 +112,11 @@ final class IssueLinkForm
         if (($data['permanent'] ?? false) === true) {
             $pending->permanent();
         } elseif (($data['expiry'] ?? null) === self::CUSTOM_EXPIRY && is_string($data['expires_on'] ?? null)) {
-            // Valid through the chosen day, but never past max_ttl_days from now.
-            $expiresAt = CarbonImmutable::parse($data['expires_on'])->endOfDay();
+            // Valid through the chosen day in Filament's display timezone (stored in the app
+            // timezone), but never past max_ttl_days from now.
+            $expiresAt = CarbonImmutable::parse($data['expires_on'], FilamentTimezone::get())
+                ->endOfDay()
+                ->setTimezone(self::appTimezone());
             $maxTtlDays = PublicLinksConfig::maxTtlDays();
 
             if ($maxTtlDays !== null && $expiresAt->greaterThan(CarbonImmutable::now()->addDays($maxTtlDays))) {
@@ -149,6 +157,13 @@ final class IssueLinkForm
         $options[self::CUSTOM_EXPIRY] = self::label('form.expiry_custom');
 
         return $options;
+    }
+
+    private static function appTimezone(): string
+    {
+        $timezone = config('app.timezone');
+
+        return is_string($timezone) && $timezone !== '' ? $timezone : 'UTC';
     }
 
     private static function user(): ?Model

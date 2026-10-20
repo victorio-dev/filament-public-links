@@ -57,9 +57,20 @@ $panel->plugins([
     PublicLinksPlugin::make()
         ->expiryOptions([1, 7, 30])                 // days offered in the form
         ->defaultExpiry(7)
-        ->purposeLabels(['view' => 'View quote']),  // shown instead of the raw purpose
+        ->purposeLabels(['view' => 'View quote'])   // wins over every other purpose label
+        ->dateTimeFormat('d/m/Y H:i'),              // every time in the table, log and modal
 ]);
 ```
+
+Purposes get readable labels on their own: the label given at registration
+(`PublicLinks::handle(Quote::class, 'accept', AcceptQuote::class, 'Accept the quote')`, plain
+text or a translation key), else the package's translation for `view`, `accept` and `download`,
+else the name itself ("sign-contract" becomes "Sign contract").
+
+Times are shown in Filament's display timezone (`FilamentTimezone::set()`). When links are
+created or revoked outside the relation manager, it refreshes on its own; after changing links
+in your own code, dispatch `PublicLinksRelationManager::LINKS_CHANGED` from the Livewire
+component.
 
 ## Configuration
 
@@ -83,6 +94,8 @@ Start at the top of this list and stop at the first step that does the job.
        'show_powered_by' => false,
    ],
    ```
+   Admin-side times use the package's translated format (en `M j, Y H:i`, hu `Y. M j. H:i`);
+   `PublicLinksPlugin::make()->dateTimeFormat('d/m/Y H:i')` sets your own for all of them.
 2. **Translations** — every user-facing string. English is the base language, Hungarian ships
    alongside it:
 

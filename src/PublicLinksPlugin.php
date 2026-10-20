@@ -17,6 +17,7 @@ use InvalidArgumentException;
  *         ->expiryOptions([1, 7, 30])
  *         ->defaultExpiry(7)
  *         ->purposeLabels(['view' => 'View quote', 'accept' => 'Accept quote'])
+ *         ->dateTimeFormat('d/m/Y H:i')
  */
 final class PublicLinksPlugin implements Plugin
 {
@@ -31,6 +32,8 @@ final class PublicLinksPlugin implements Plugin
      * @var array<string, string>
      */
     private array $purposeLabels = [];
+
+    private ?string $dateTimeFormat = null;
 
     public static function make(): static
     {
@@ -119,7 +122,8 @@ final class PublicLinksPlugin implements Plugin
     }
 
     /**
-     * Human labels for purposes, shown in the form and the table instead of the raw name.
+     * Labels for purposes, shown in the form, the table and the URL modal. They win over the label
+     * given to PublicLinks::handle() and over the package's own translations.
      *
      * @param  array<string, string>  $labels
      */
@@ -130,8 +134,24 @@ final class PublicLinksPlugin implements Plugin
         return $this;
     }
 
-    public function getPurposeLabel(string $purpose): string
+    public function getPurposeLabel(string $purpose): ?string
     {
-        return $this->purposeLabels[$purpose] ?? $purpose;
+        return $this->purposeLabels[$purpose] ?? null;
+    }
+
+    /**
+     * A PHP date() format for every time the package shows (table, access log, URL modal), instead
+     * of the package's translated default (en "M j, Y H:i", hu "Y. M j. H:i").
+     */
+    public function dateTimeFormat(?string $format): self
+    {
+        $this->dateTimeFormat = $format === '' ? null : $format;
+
+        return $this;
+    }
+
+    public function getDateTimeFormat(): ?string
+    {
+        return $this->dateTimeFormat;
     }
 }

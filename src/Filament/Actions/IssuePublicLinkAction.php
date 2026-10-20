@@ -8,6 +8,7 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
+use Victorio\PublicLinks\Filament\RelationManagers\PublicLinksRelationManager;
 use Victorio\PublicLinks\Filament\Support\Authorizer;
 use Victorio\PublicLinks\Filament\Support\IssueLinkForm;
 use Victorio\PublicLinks\Filament\Support\OwnerRecord;
@@ -47,7 +48,8 @@ final class IssuePublicLinkAction extends Action
                 self::shownLinkKey($action, $livewire) !== null ? 'actions.url.heading' : 'actions.issue.heading',
             ))
             ->modalSubmitActionLabel(IssueLinkForm::label('actions.issue.submit'))
-            ->modalSubmitAction(static fn (Action $action, mixed $livewire): ?bool => self::shownLinkKey($action, $livewire) !== null
+            // Filament passes the submit button as `$action` here; see design.md "Filament internals" #4.
+            ->modalSubmitAction(fn (mixed $livewire): ?bool => self::shownLinkKey($this, $livewire) !== null
                 ? false
                 : null)
             ->modalCancelActionLabel(static fn (Action $action, mixed $livewire): ?string => self::shownLinkKey($action, $livewire) !== null
@@ -70,7 +72,7 @@ final class IssuePublicLinkAction extends Action
                 $owner = OwnerRecord::resolve($livewire, $record);
                 $link = $owner === null ? null : OwnerRecord::link($owner, $key);
 
-                return PackageView::make('filament.url', ['url' => $link?->url()]);
+                return PackageView::make('filament.url', ['link' => $link]);
             })
             ->visible(static fn (mixed $livewire, ?Model $record): bool => Authorizer::allows(
                 Authorizer::UPDATE,
@@ -93,6 +95,10 @@ final class IssuePublicLinkAction extends Action
 
                 $issued = IssueLinkForm::issue($owner, $data);
 
+                if (is_object($livewire) && method_exists($livewire, 'dispatch')) {
+                    $livewire->dispatch(PublicLinksRelationManager::LINKS_CHANGED);
+                }
+
                 Notification::make()
                     ->success()
                     ->title(IssueLinkForm::label('actions.issue.created'))
@@ -103,13 +109,14 @@ final class IssuePublicLinkAction extends Action
                 // replaced only when its name or context changes, so the context gets a marker
                 // (Filament ignores keys it does not know). Filament resets the action object's
                 // arguments after the call, so the URL state is read from the mounted action
-                // entry instead (shownLinkKey()).
+                // entry instead (shownLinkKey()). See design.md "Filament internals" #1-#3.
                 if (is_object($livewire) && method_exists($livewire, 'replaceMountedAction')) {
                     $livewire->replaceMountedAction(
                         $this->getName(),
                         [self::LINK_ARGUMENT => $issued->link->getKey()],
                         [...self::mountedContext($livewire), self::URL_CONTEXT_MARKER => true],
                     );
+
                 }
             });
     }
@@ -117,6 +124,7 @@ final class IssuePublicLinkAction extends Action
     /**
      * The key of the link whose URL this action is showing, or null while it shows the form. Read
      * from the component's mounted actions: only an entry for this action, marked by this action.
+     * Relies on the entry shape; see design.md "Filament internals" #1.
      */
     private static function shownLinkKey(Action $action, mixed $livewire): ?string
     {

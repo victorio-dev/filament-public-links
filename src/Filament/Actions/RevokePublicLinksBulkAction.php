@@ -7,6 +7,7 @@ namespace Victorio\PublicLinks\Filament\Actions;
 use Filament\Actions\BulkAction;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Victorio\PublicLinks\Filament\RelationManagers\PublicLinksRelationManager;
 use Victorio\PublicLinks\Filament\Support\Authorizer;
 use Victorio\PublicLinks\Filament\Support\IssueLinkForm;
 use Victorio\PublicLinks\Filament\Support\OwnerRecord;
@@ -40,13 +41,17 @@ final class RevokePublicLinksBulkAction extends BulkAction
             ->deselectRecordsAfterCompletion()
             ->visible(static fn (mixed $livewire): bool => Authorizer::allows(Authorizer::UPDATE, OwnerRecord::resolve($livewire)))
             ->authorize(static fn (mixed $livewire): bool => Authorizer::allows(Authorizer::UPDATE, OwnerRecord::resolve($livewire)))
-            ->action(function (Collection $records): void {
+            ->action(function (Collection $records, mixed $livewire): void {
                 $user = auth()->user();
 
                 foreach ($records as $record) {
                     if ($record instanceof PublicLink) {
                         $record->revoke($user instanceof Model ? $user : null);
                     }
+                }
+
+                if (is_object($livewire) && method_exists($livewire, 'dispatch')) {
+                    $livewire->dispatch(PublicLinksRelationManager::LINKS_CHANGED);
                 }
 
                 $this->success();

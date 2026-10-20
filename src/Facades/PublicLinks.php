@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\Facade;
 use Victorio\PublicLinks\PublicLinkRegistry;
 
 /**
- * @method static PublicLinkRegistry handle(string $modelClass, string $purpose, string $handlerClass)
+ * @method static PublicLinkRegistry handle(string $modelClass, string $purpose, string $handlerClass, ?string $label = null)
+ * @method static string labelFor(string $model, string $purpose)
  * @method static bool has(string $model, string $purpose)
  * @method static \Victorio\PublicLinks\Contracts\PublicLinkHandler|null handlerFor(string $morphClass, string $purpose)
  * @method static list<string> purposesFor(string $model)

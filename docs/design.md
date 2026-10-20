@@ -357,6 +357,25 @@ Learned in step 4 (verified against Filament 4.15 / Livewire 3.8 and Filament 5.
 - In tests, `assertMountedActionModalSee()` reads modal content on both versions (Filament 5
   renders action modals in a Livewire 4 partial).
 
+### Filament internals we depend on
+
+Behaviour that is not documented Filament API but that the admin UI relies on. Checked against
+**Filament 4.15.2 (Livewire 3.8.10)** and **Filament 5.10.2 (Livewire 4.4.7)**, identical in both.
+On a Filament upgrade, check these first; the code points back here with a one-line comment.
+
+| # | What we rely on | Where in Filament | Used by |
+| --- | --- | --- | --- |
+| 1 | The shape of a `mountedActions` entry: `name`, `arguments`, `context` | `Actions\Concerns\InteractsWithActions::mountAction()` | `IssuePublicLinkAction::shownLinkKey()`, `mountedContext()` |
+| 2 | `callMountedAction()` treats an action as replaced only when the **name or context** of the mounted entry changed, and resets the action object's arguments after the call | `InteractsWithActions::callMountedAction()` (end of method) | `IssuePublicLinkAction`: context marker `filamentPublicLinksUrl`, URL state read from the entry, not the action object |
+| 3 | Unknown keys in an action's `context` are ignored when the action is resolved (only `mountedFromUrl`, `schemaComponent`, `table`, `bulk`, `recordKey` are read) | `InteractsWithActions::resolveActions()` and helpers | the context marker of #2 |
+| 4 | A `modalSubmitAction()` closure receives the **submit button** as `$action`, not the parent action | `Actions\Concerns\CanOpenModal::getModalSubmitAction()` | `IssuePublicLinkAction` uses `$this` there |
+| 5 | A hidden action cannot be mounted (`isDisabled()` includes `isHidden()`) | `Actions\Concerns\CanBeDisabled::isDisabled()`, `mountAction()` | authorization: hidden actions are also `authorize()`d, so this is defence in depth |
+| 6 | A relation manager's table query is `$relationship->getQuery()`; the inverse relationship is only guessed for associate/attach/create actions | `Tables\Table\Concerns\HasQuery::getRelationshipQuery()`, `getInverseRelationship()` | `PublicLinksRelationManager` with `StringKeyedMorphMany` |
+
+Not internal, but version-sensitive in tests: Filament 5 renders action modals in a Livewire 4
+partial, so modal content is asserted with `assertMountedActionModalSee()` (public testing API,
+present in both).
+
 ## g) Config — `config/filament-public-links.php`
 
 ```php

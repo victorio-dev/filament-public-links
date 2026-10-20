@@ -15,7 +15,17 @@ return [
         'powered_by' => 'Működteti: Victorio Public Links',
     ],
 
+    'purposes' => [
+        'view' => 'Megtekintés',
+        'accept' => 'Elfogadás',
+        'download' => 'Letöltés',
+    ],
+
     'filament' => [
+        // PHP date() format of every time the package shows; PublicLinksPlugin::dateTimeFormat()
+        // overrides it.
+        'date_time_format' => 'Y. M j. H:i',
+
         'relation_manager' => [
             'title' => 'Nyilvános linkek',
             'empty' => 'Még nincs nyilvános link.',
@@ -61,6 +71,9 @@ return [
                 'copied' => 'Másolva',
                 'manual' => 'A kijelölt linket Ctrl+C-vel (Macen Cmd+C-vel) másolhatja.',
                 'unavailable' => 'Ez a link már nem jeleníthető meg, mert megváltozott az alkalmazás kulcsa. Szükség esetén vonja vissza, és hozzon létre újat.',
+                'expires' => 'Lejár: :date',
+                'never_expires' => 'Soha nem jár le',
+                'usage' => 'Használati korlát: :max (felhasználva: :used)',
                 'close' => 'Bezárás',
             ],
             'copy' => [

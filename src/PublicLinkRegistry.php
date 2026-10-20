@@ -6,6 +6,8 @@ namespace Victorio\PublicLinks;
 
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Lang;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Victorio\PublicLinks\Contracts\PublicLinkHandler;
 use Victorio\PublicLinks\Exceptions\DuplicateHandler;
@@ -25,13 +27,19 @@ final class PublicLinkRegistry
      */
     private array $handlers = [];
 
+    /**
+     * @var array<string, array<string, string>>
+     */
+    private array $labels = [];
+
     public function __construct(private readonly Container $container) {}
 
     /**
      * @param  class-string<Model>  $modelClass
      * @param  class-string<PublicLinkHandler>  $handlerClass
+     * @param  string|null  $label  shown in the admin UI; a plain text or a translation key
      */
-    public function handle(string $modelClass, string $purpose, string $handlerClass): self
+    public function handle(string $modelClass, string $purpose, string $handlerClass, ?string $label = null): self
     {
         if (! is_subclass_of($handlerClass, PublicLinkHandler::class)) {
             throw new InvalidArgumentException(sprintf(
@@ -49,6 +57,10 @@ final class PublicLinkRegistry
         }
 
         $this->handlers[$morphClass][$purpose] = $handlerClass;
+
+        if ($label !== null && $label !== '') {
+            $this->labels[$morphClass][$purpose] = $label;
+        }
 
         return $this;
     }
@@ -87,6 +99,37 @@ final class PublicLinkRegistry
     public function purposesFor(string $model): array
     {
         return array_keys($this->handlers[self::morphClassOf($model)] ?? []);
+    }
+
+    /**
+     * The label of a purpose: the one given to handle() (translated when it is a translation key),
+     * else the package's translation for common purposes (view, accept, download), else a
+     * readable form of the name ("sign-contract" becomes "Sign contract"). The plugin's
+     * purposeLabels() wins over all of these in the admin UI.
+     *
+     * @param  class-string<Model>|string  $model
+     */
+    public function labelFor(string $model, string $purpose): string
+    {
+        $registered = $this->labels[self::morphClassOf($model)][$purpose] ?? null;
+
+        if ($registered !== null) {
+            $translated = __($registered);
+
+            return is_string($translated) ? $translated : $registered;
+        }
+
+        $key = 'filament-public-links::filament-public-links.purposes.'.$purpose;
+
+        if (Lang::has($key)) {
+            $translated = __($key);
+
+            if (is_string($translated)) {
+                return $translated;
+            }
+        }
+
+        return Str::ucfirst(str_replace(['-', '_', '.'], ' ', $purpose));
     }
 
     /**

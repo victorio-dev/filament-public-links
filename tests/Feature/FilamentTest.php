@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Filament\Facades\Filament;
+use Filament\Support\Facades\FilamentTimezone;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -16,6 +17,7 @@ use Victorio\PublicLinks\Filament\RelationManagers\PublicLinksRelationManager;
 use Victorio\PublicLinks\Models\PublicLink;
 use Victorio\PublicLinks\Models\PublicLinkAccess;
 use Victorio\PublicLinks\PublicLinkRegistry;
+use Victorio\PublicLinks\PublicLinksPlugin;
 use Victorio\PublicLinks\Tests\Fixtures\Filament\Pages\EditIntRecord;
 use Victorio\PublicLinks\Tests\Fixtures\Handlers\ShowRecord;
 use Victorio\PublicLinks\Tests\Fixtures\IntRecord;
@@ -121,7 +123,8 @@ it('creates a link from the form and shows its URL once', function (): void {
         ->and($link->created_by_id)->toBe((string) auth()->id());
 
     $component->assertMountedActionModalSee((string) $link->url())
-        ->assertMountedActionModalDontSee('Usage limit');
+        ->assertMountedActionModalSee(['Expires: Nov 3, 2026 12:00', 'Usage limit: 2 (used: 0)', 'Close'])
+        ->assertMountedActionModalDontSee(['Create link', 'Leave empty for no limit.']);
     Event::assertDispatched(PublicLinkCreated::class);
 });
 
@@ -340,4 +343,127 @@ it('issues a link from a resource page through IssuePublicLinkAction', function 
 
     $link = $quote->publicLinks()->sole();
     $component->assertMountedActionModalSee((string) $link->url());
+});
+
+it('shows expiry and usage in the "Copy link" modal, and "Never expires" for permanent links', function (): void {
+    Carbon::setTestNow('2026-10-20 12:00:00');
+    config()->set('filament-public-links.defaults.allow_permanent', true);
+    $quote = IntRecord::create(['name' => 'Quote']);
+    $limited = $quote->publicLink('view')->expiresIn(days: 7)->maxUses(3)->issue()->link;
+    $limited->recordUse();
+    $permanent = $quote->publicLink('view')->permanent()->issue()->link;
+
+    linksTable($quote)
+        ->mountTableAction('copyPublicLink', $limited)
+        ->assertMountedActionModalSee(['Expires: Oct 27, 2026 12:00', 'Usage limit: 3 (used: 1)']);
+
+    linksTable($quote)
+        ->mountTableAction('copyPublicLink', $permanent)
+        ->assertMountedActionModalSee('Never expires')
+        ->assertMountedActionModalDontSee('Usage limit');
+});
+
+it('tells every links table on the page to refresh after a link is created or revoked elsewhere', function (): void {
+    $quote = IntRecord::create(['name' => 'Quote']);
+    $table = linksTable($quote);
+
+    Livewire::test(EditIntRecord::class, ['record' => $quote->getKey()])
+        ->callAction('issuePublicLink', data: ['purpose' => 'view', 'expiry' => '7'])
+        ->assertDispatched(PublicLinksRelationManager::LINKS_CHANGED);
+
+    $link = $quote->publicLinks()->sole();
+
+    // The table that was already on the page picks the new link up on the event, no reload.
+    $table->dispatch(PublicLinksRelationManager::LINKS_CHANGED)
+        ->assertCanSeeTableRecords([$link]);
+
+    linksTable($quote)
+        ->callTableAction('revokePublicLink', $link)
+        ->assertDispatched(PublicLinksRelationManager::LINKS_CHANGED);
+
+    $table->dispatch(PublicLinksRelationManager::LINKS_CHANGED)
+        ->assertSee('Revoked');
+});
+
+it('shows times in Filament\'s display timezone and the same format in the table and the log', function (): void {
+    FilamentTimezone::set('Europe/Budapest');
+    Carbon::setTestNow('2026-10-20 12:00:00'); // UTC, 14:00 in Budapest
+    $quote = IntRecord::create(['name' => 'Quote']);
+    $link = $quote->publicLink('view')->expiresIn(days: 7)->issue()->link;
+    PublicLinkAccess::create([
+        'public_link_id' => $link->id,
+        'outcome' => 'opened',
+        'ip_hash' => str_repeat('a', 64),
+        'accessed_at' => now(),
+    ]);
+
+    // Created on Oct 20 (CEST, UTC+2); expires on Oct 27, after the switch to CET (UTC+1).
+    linksTable($quote)
+        ->assertSee('Oct 27, 2026 13:00')   // expires
+        ->assertSee('Oct 20, 2026 14:00')   // created
+        ->mountTableAction('viewPublicLinkAccessLog', $link)
+        ->assertMountedActionModalSee('Oct 20, 2026 14:00');
+
+    app()->setLocale('hu');
+    linksTable($quote)->assertSee('2026. okt. 27. 13:00');
+
+    FilamentTimezone::set(null);
+});
+
+it('uses the plugin\'s date format everywhere when one is set', function (): void {
+    Carbon::setTestNow('2026-10-20 12:00:00');
+    Filament::getPanel('admin')->plugin(PublicLinksPlugin::make()->dateTimeFormat('d/m/Y H:i'));
+    $quote = IntRecord::create(['name' => 'Quote']);
+    $link = $quote->publicLink('view')->expiresIn(days: 7)->issue()->link;
+
+    linksTable($quote)
+        ->assertSee('27/10/2026 12:00')
+        ->mountTableAction('copyPublicLink', $link)
+        ->assertMountedActionModalSee('Expires: 27/10/2026 12:00');
+});
+
+it('keeps a custom expiry date valid through that day in the display timezone', function (): void {
+    FilamentTimezone::set('Europe/Budapest');
+    Carbon::setTestNow('2026-10-20 12:00:00');
+    $quote = IntRecord::create(['name' => 'Quote']);
+
+    linksTable($quote)
+        ->callTableAction('issuePublicLink', data: ['purpose' => 'view', 'expiry' => 'custom', 'expires_on' => '2026-10-23'])
+        ->assertHasNoErrors();
+    linksTable($quote)
+        ->callTableAction('issuePublicLink', data: ['purpose' => 'view', 'expiry' => 'custom', 'expires_on' => '2026-11-10'])
+        ->assertHasNoErrors();
+
+    // End of the day in Budapest: CEST (UTC+2) before Oct 25, CET (UTC+1) after.
+    expect($quote->publicLinks()->orderBy('expires_at')->pluck('expires_at')->map->toDateTimeString()->all())
+        ->toBe(['2026-10-23 21:59:59', '2026-11-10 22:59:59']);
+
+    FilamentTimezone::set(null);
+});
+
+it('labels purposes: plugin first, then the label given to handle(), then translations, then the name', function (): void {
+    $registry = new PublicLinkRegistry(app());
+    $registry->handle(IntRecord::class, 'view', ShowRecord::class);
+    $registry->handle(IntRecord::class, 'sign-contract', ShowRecord::class);
+    $registry->handle(IntRecord::class, 'accept', ShowRecord::class, 'Accept the quote');
+    $registry->handle(IntRecord::class, 'download', ShowRecord::class, 'filament-public-links::filament-public-links.purposes.view');
+    app()->instance(PublicLinkRegistry::class, $registry);
+
+    expect($registry->labelFor(IntRecord::class, 'view'))->toBe('View')                     // package translation
+        ->and($registry->labelFor(IntRecord::class, 'sign-contract'))->toBe('Sign contract') // readable name
+        ->and($registry->labelFor(IntRecord::class, 'accept'))->toBe('Accept the quote')     // plain label
+        ->and($registry->labelFor(IntRecord::class, 'download'))->toBe('View');              // translation key
+
+    app()->setLocale('hu');
+    expect($registry->labelFor(IntRecord::class, 'view'))->toBe('Megtekintés');
+    app()->setLocale('en');
+
+    $quote = IntRecord::create(['name' => 'Quote']);
+    $quote->publicLink('accept')->issue();
+
+    linksTable($quote)->assertSee('Accept the quote');
+
+    Filament::getPanel('admin')->plugin(PublicLinksPlugin::make()->purposeLabels(['accept' => 'Plugin label']));
+
+    linksTable($quote)->assertSee('Plugin label')->assertDontSee('Accept the quote');
 });

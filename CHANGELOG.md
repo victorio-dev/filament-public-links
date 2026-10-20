@@ -56,7 +56,15 @@ marked `@internal`.
   clicked; copying falls back to selecting the text when the Clipboard API is unavailable.
   Permissions follow the owner record's `view` / `update` policy; with Filament tenancy only the
   current tenant's links are listed. Optional `PublicLinksPlugin` options: `expiryOptions()`,
-  `defaultExpiry()`, `purposeLabels()`. English and Hungarian labels.
+  `defaultExpiry()`, `purposeLabels()`, `dateTimeFormat()`. English and Hungarian labels.
+- `PublicLinks::handle()` takes an optional label (text or translation key); `labelFor()` resolves
+  it, falling back to translations for `view`, `accept`, `download` and to a readable name.
+- The relation manager refreshes when links are created or revoked elsewhere on the page
+  (`PublicLinksRelationManager::LINKS_CHANGED`).
+- The URL modal shows the expiry ("Never expires" for permanent links) and the usage limit, and
+  only a "Close" button after a link was created.
+- Times in the table, the access log and the URL modal use Filament's display timezone, the app
+  locale and one format; a custom expiry date is valid through that day in the display timezone.
 - `php artisan filament-public-links:install`; publish tags `filament-public-links-config`,
   `-migrations`, `-translations`, `-views`.
 
