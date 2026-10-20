@@ -50,7 +50,7 @@ final class PublicLinkController
         if ($handler->countsOpensAsUses() && ! $link->recordUse()) {
             $this->recorder->record($link, AccessOutcome::Exhausted, $request);
 
-            return PublicLinkResponses::status(AccessOutcome::Exhausted, 410);
+            return PublicLinkResponses::status(AccessOutcome::Exhausted, 410, $link);
         }
 
         $first = $link->markOpened();
@@ -79,7 +79,7 @@ final class PublicLinkController
         if (! $handler instanceof HandlesPublicLinkActions || ! in_array($action, $handler->actions(), true)) {
             $this->recorder->record($link, AccessOutcome::UnknownAction, $request, $action);
 
-            return PublicLinkResponses::status(AccessOutcome::NotFound, 404);
+            return PublicLinkResponses::status(AccessOutcome::NotFound, 404, $link);
         }
 
         $response = $handler->handleAction($action, new PublicLinkVisit($link, $linkable, $request, $action));
@@ -121,7 +121,7 @@ final class PublicLinkController
             ]);
             $this->recorder->record($link, AccessOutcome::MissingHandler, $request);
 
-            return PublicLinkResponses::status(AccessOutcome::MissingHandler, 410);
+            return PublicLinkResponses::status(AccessOutcome::MissingHandler, 410, $link);
         }
 
         $linkable = $link->linkable;
@@ -129,7 +129,7 @@ final class PublicLinkController
         if (! $linkable instanceof Model) {
             $this->recorder->record($link, AccessOutcome::MissingTarget, $request);
 
-            return PublicLinkResponses::status(AccessOutcome::MissingTarget, 410);
+            return PublicLinkResponses::status(AccessOutcome::MissingTarget, 410, $link);
         }
 
         return [$handler, $linkable];

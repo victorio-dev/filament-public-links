@@ -42,7 +42,14 @@ marked `@internal`.
 - Events `PublicLinkOpened`, `PublicLinkFirstOpened` (once per link), `PublicLinkActionPerformed`.
 - `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow` and `Cache-Control: no-store`
   on every public response.
-- A plain 404/410 page (`filament-public-links::status`), to be branded in a later release.
+- Branded public layout `<x-filament-public-links::layout>` with `title`, default and `footer`
+  slots: inline CSS, light and dark mode, no external assets, `lang` from the app locale,
+  `header`/`main`/`footer` landmarks, brand-colour text picked for WCAG AA contrast.
+- Branding config (`name`, `logo_url`, `primary_color`, `footer_text`, `contact_email`,
+  `show_powered_by`) and the `BrandingResolver` contract with `ConfigBrandingResolver` as the
+  default; a resolver bound in `branding.resolver` receives the link, for per-tenant branding.
+  `Branding::make()` cleans every value (colours, logo URLs, e-mail addresses).
+- The 404/410 pages use the layout; 410 pages offer `contact_email` when it is set.
 - `php artisan filament-public-links:install`; publish tags `filament-public-links-config`,
   `-migrations`, `-translations`, `-views`.
 

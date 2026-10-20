@@ -6,15 +6,20 @@ namespace Victorio\PublicLinks\Http;
 
 use Symfony\Component\HttpFoundation\Response;
 use Victorio\PublicLinks\Enums\AccessOutcome;
+use Victorio\PublicLinks\Models\PublicLink;
+use Victorio\PublicLinks\Support\PublicLinksConfig;
 
 /**
- * The plain 404/410 pages. Step 3 of the design brands them; the view and its data stay the same.
+ * The branded 404/410 pages.
  *
  * @internal
  */
 final class PublicLinkResponses
 {
-    public static function status(AccessOutcome $outcome, int $status): Response
+    /**
+     * $link is null on 404 (no link was found), set on 410, so a per-tenant resolver can brand it.
+     */
+    public static function status(AccessOutcome $outcome, int $status, ?PublicLink $link = null): Response
     {
         $key = match ($outcome) {
             AccessOutcome::Expired => 'expired',
@@ -23,6 +28,11 @@ final class PublicLinkResponses
             default => 'not_found',
         };
 
-        return response()->view('filament-public-links::status', ['messageKey' => $key], $status);
+        return response()->view('filament-public-links::status', [
+            'messageKey' => $key,
+            'status' => $status,
+            'link' => $link,
+            'branding' => app(PublicLinksConfig::brandingResolver())->resolve($link),
+        ], $status);
     }
 }

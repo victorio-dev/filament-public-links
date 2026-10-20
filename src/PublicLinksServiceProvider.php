@@ -6,6 +6,7 @@ namespace Victorio\PublicLinks;
 
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
@@ -63,6 +64,10 @@ final class PublicLinksServiceProvider extends PackageServiceProvider
 
         $this->registerRateLimiter();
         $this->registerRoutes();
+
+        // <x-filament-public-links::layout> and friends, under the package name (rule D11) rather
+        // than package-tools' dashed prefix and extra publish tag.
+        Blade::componentNamespace('Victorio\\PublicLinks\\View\\Components', self::$name);
     }
 
     /**

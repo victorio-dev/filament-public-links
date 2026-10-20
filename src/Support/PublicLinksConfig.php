@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Victorio\PublicLinks\Support;
 
+use InvalidArgumentException;
+use Victorio\PublicLinks\Branding\ConfigBrandingResolver;
+use Victorio\PublicLinks\Contracts\BrandingResolver;
 use Victorio\PublicLinks\Models\PublicLink;
 use Victorio\PublicLinks\Models\PublicLinkAccess;
 
@@ -127,6 +130,35 @@ final class PublicLinksConfig
         }
 
         return $clean;
+    }
+
+    public static function brandingString(string $key): ?string
+    {
+        return self::nullableString('branding.'.$key);
+    }
+
+    /**
+     * The configured resolver class, or the config-based default.
+     *
+     * @return class-string<BrandingResolver>
+     */
+    public static function brandingResolver(): string
+    {
+        $resolver = config(self::KEY.'.branding.resolver');
+
+        if ($resolver === null || $resolver === '') {
+            return ConfigBrandingResolver::class;
+        }
+
+        if (! is_string($resolver) || ! is_subclass_of($resolver, BrandingResolver::class)) {
+            throw new InvalidArgumentException(sprintf(
+                '%s.branding.resolver must be a class implementing %s.',
+                self::KEY,
+                BrandingResolver::class,
+            ));
+        }
+
+        return $resolver;
     }
 
     public static function tokenBytes(): int

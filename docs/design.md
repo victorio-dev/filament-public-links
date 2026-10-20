@@ -267,22 +267,32 @@ copy. Tests assert the same steps run on both paths (structural), plus an opt-in
 ## d) Branding
 
 Config `branding.*`: `name` (default `config('app.name')`), `logo_url`, `primary_color`,
-`accent_color`, `footer_text`, `support_email`. These go through a `BrandingResolver` (config
-`branding.resolver`); the default reads config, a SaaS host swaps in its own to brand per tenant
-(the resolver receives the `PublicLink`, or null on a 404).
+`footer_text`, `contact_email` (offered on 410 pages only, as a mailto link) and
+`show_powered_by` (default false). They go through a `BrandingResolver` (config
+`branding.resolver`, null = `ConfigBrandingResolver`); a SaaS host swaps in its own to brand per
+tenant. The resolver receives the `PublicLink`, or null on a 404.
 
-The layout is a Blade component with plain, inlined CSS driven by CSS variables — no Tailwind, no
-Vite, nothing the host has to build:
+Every value passes through `Branding::make()`, the only way to build one: colours must be
+`#rgb`/`#rrggbb` (they go into a `<style>` block, where HTML escaping does not protect), logo URLs
+must be http(s) or start with `/`, invalid e-mail addresses are dropped. The text colour on the
+brand colour is black or white, whichever contrasts more — at least ~4.58:1 for any colour.
+
+The layout is a Blade class component with inline CSS driven by CSS variables, light and dark
+(`prefers-color-scheme`), no Tailwind, no Vite, no JavaScript, nothing the host has to build:
 
 ```blade
-<x-filament-public-links::layout :link="$link" :title="__('filament-quotes::public.title')">
-    <h1>{{ $quote->number }}</h1>
+<x-filament-public-links::layout :link="$visit->link" :page-title="$quote->number">
+    <x-slot:title>{{ $quote->number }}</x-slot:title>
     …
+    <x-slot:footer>Questions? Call us.</x-slot:footer>
 </x-filament-public-links::layout>
 ```
 
-Slots: default, `header`, `footer`. The 404/410 pages use the same layout. Hosts restyle by
-publishing the views (`--tag=filament-public-links-views`).
+Slots: `title` (the single `h1`), default (content), `footer`. `lang` comes from the app locale;
+`header`/`main`/`footer` landmarks; the logo's alt text is the brand name. The 404/410 pages use
+the same layout. Customization order (rule D11): config → translations → resolver → publishing the
+views (`filament-public-links-views`), which the README marks as a last resort that stops
+receiving updates.
 
 ## e) Events
 

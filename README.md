@@ -39,8 +39,19 @@ the keys that matter: models, tables, tenancy, public routes, tokens, access log
 
 Start at the top of this list and stop at the first step that does the job.
 
-1. **Config** — `config/filament-public-links.php`. TODO the keys users change most: branding (name,
-   logo, colours), behaviour switches, defaults.
+1. **Config** — `config/filament-public-links.php`. The public pages take their look from
+   `branding`:
+
+   ```php
+   'branding' => [
+       'name' => 'Acme Ltd',                       // null = config('app.name')
+       'logo_url' => 'https://cdn.acme.test/logo.svg',
+       'primary_color' => '#1d4ed8',               // #rgb or #rrggbb; text colour is picked for contrast
+       'footer_text' => 'Acme Ltd · 1 Main Street',
+       'contact_email' => 'links@acme.test',       // offered on the "link no longer available" page
+       'show_powered_by' => false,
+   ],
+   ```
 2. **Translations** — every user-facing string. English is the base language, Hungarian ships
    alongside it:
 
@@ -48,8 +59,26 @@ Start at the top of this list and stop at the first step that does the job.
    php artisan vendor:publish --tag="filament-public-links-translations"
    ```
 
-3. **Swappable classes** — TODO the models, resolvers or providers bound in config, and the
-   contract each replacement implements.
+3. **Swappable classes** — brand per tenant with a resolver bound in
+   `branding.resolver`. It receives the link (null on the 404 page) and returns a `Branding`:
+
+   ```php
+   use Victorio\PublicLinks\Contracts\BrandingResolver;
+   use Victorio\PublicLinks\Data\Branding;
+   use Victorio\PublicLinks\Models\PublicLink;
+
+   final class TenantBranding implements BrandingResolver
+   {
+       public function resolve(?PublicLink $link): Branding
+       {
+           $team = Team::find($link?->tenant_id);
+
+           return Branding::make(name: $team->name ?? config('app.name'), logoUrl: $team?->logo_url);
+       }
+   }
+   ```
+
+   The models are swappable too (`models.link`, `models.access`).
 4. **Views — last resort.**
 
    ```bash

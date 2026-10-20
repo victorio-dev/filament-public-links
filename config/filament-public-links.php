@@ -139,20 +139,25 @@ return [
     | Branding
     |--------------------------------------------------------------------------
     |
-    | Used by the public layout and the 404/410 pages. Set a resolver class
-    | (implementing the BrandingResolver contract) to brand per tenant; null
-    | uses the values below.
+    | Used by the public layout and the 404/410 pages. Colours are #rgb or
+    | #rrggbb (anything else falls back to the default); the logo URL must be
+    | http(s) or start with "/". contact_email, when set, is offered on the
+    | 410 page for asking for a new link.
+    |
+    | To brand per tenant, set `resolver` to a class implementing
+    | Victorio\PublicLinks\Contracts\BrandingResolver; null uses the values
+    | below. Prefer this to publishing the views, which stop receiving updates.
     |
     */
 
     'branding' => [
         'resolver' => null,
-        'name' => null,
+        'name' => null, // null = config('app.name')
         'logo_url' => null,
         'primary_color' => '#1f2937',
-        'accent_color' => '#f59e0b',
         'footer_text' => null,
-        'support_email' => null,
+        'contact_email' => null,
+        'show_powered_by' => false,
     ],
 
     /*

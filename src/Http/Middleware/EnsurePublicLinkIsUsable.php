@@ -40,7 +40,7 @@ final class EnsurePublicLinkIsUsable
             $outcome = AccessOutcome::forStatus($status);
             $this->recorder->record($link, $outcome, $request);
 
-            return PublicLinkResponses::status($outcome, 410);
+            return PublicLinkResponses::status($outcome, 410, $link);
         }
 
         return $next($request);

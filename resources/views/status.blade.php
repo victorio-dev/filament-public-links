@@ -1,18 +1,21 @@
 {{--
-    The plain page for 404 and 410 answers. Step 3 of the design replaces it with the branded
-    layout; the data it receives ($messageKey) stays the same. Never render the token here.
+    The 404 and 410 pages, in the branded layout. $link is null on 404. The contact sentence only
+    appears on 410 (an existing link that ended), never on 404, and only when an address is set.
 --}}
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="robots" content="noindex, nofollow">
-    <title>{{ __('filament-public-links::filament-public-links.errors.'.$messageKey) }}</title>
-</head>
-<body>
-    <main>
-        <p>{{ __('filament-public-links::filament-public-links.errors.'.$messageKey) }}</p>
-    </main>
-</body>
-</html>
+@php
+    $message = __('filament-public-links::filament-public-links.errors.'.$messageKey);
+@endphp
+<x-filament-public-links::layout :link="$link" :page-title="$message" :branding="$branding">
+    <x-slot:title>{{ $message }}</x-slot:title>
+
+    @if ($status === 410)
+        @if ($branding->contactEmail !== null)
+            {{-- The sentence is escaped first; only the address is turned into a link, itself escaped. --}}
+            <p>{!! str_replace(
+                '%email%',
+                '<a href="mailto:'.e($branding->contactEmail).'">'.e($branding->contactEmail).'</a>',
+                e(__('filament-public-links::filament-public-links.errors.contact', ['email' => '%email%'])),
+            ) !!}</p>
+        @endif
+    @endif
+</x-filament-public-links::layout>
