@@ -58,6 +58,9 @@
             "providers": [
                 "Victorio\\PublicLinks\\PublicLinksServiceProvider"
             ]
+        },
+        "branch-alias": {
+            "dev-main": "0.1.x-dev"
         }
     },
     "minimum-stability": "stable",
