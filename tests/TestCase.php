@@ -18,10 +18,24 @@ abstract class TestCase extends Orchestra
      */
     protected function getPackageProviders($app): array
     {
+        // The auto-discovered providers of Filament and its dependencies, read from
+        // vendor/composer/installed.json (rule B4). All of them exist in Filament 4 and 5.
         return [
-            // Filament and Livewire service providers are added here as soon as the
-            // package renders a panel in tests. Read the list from the installed
-            // packages in playground/vendor first — never guess class names (rule B4).
+            \BladeUI\Heroicons\BladeHeroiconsServiceProvider::class,
+            \BladeUI\Icons\BladeIconsServiceProvider::class,
+            \Filament\Actions\ActionsServiceProvider::class,
+            \Filament\FilamentServiceProvider::class,
+            \Filament\Forms\FormsServiceProvider::class,
+            \Filament\Infolists\InfolistsServiceProvider::class,
+            \Filament\Notifications\NotificationsServiceProvider::class,
+            \Filament\QueryBuilder\QueryBuilderServiceProvider::class,
+            \Filament\Schemas\SchemasServiceProvider::class,
+            \Filament\Support\SupportServiceProvider::class,
+            \Filament\Tables\TablesServiceProvider::class,
+            \Filament\Widgets\WidgetsServiceProvider::class,
+            \Kirschbaum\PowerJoins\PowerJoinsServiceProvider::class,
+            \Livewire\LivewireServiceProvider::class,
+            \RyanChandler\BladeCaptureDirective\BladeCaptureDirectiveServiceProvider::class,
             PublicLinksServiceProvider::class,
         ];
     }
@@ -31,10 +45,14 @@ abstract class TestCase extends Orchestra
      */
     protected function defineEnvironment($app): void
     {
+        // Links store an encrypted copy of their token (ADR-0008), so the suite needs an app key.
+        $app['config']->set('app.key', 'base64:'.base64_encode(str_repeat('k', 32)));
+
         // DB_CONNECTION=mysql|pgsql (`make test DB=...`, CI) keeps Testbench's own connection of
-        // that name, whose config file reads DB_HOST, DB_DATABASE and friends. Without it the
-        // default stays sqlite, and the suite runs on an in-memory database.
-        if ($app['config']->get('database.default') !== 'sqlite') {
+        // that name, whose config file reads DB_HOST, DB_DATABASE and friends. Without it
+        // Testbench defaults to its `testing` sqlite connection (foreign keys off), which is
+        // replaced below by an in-memory one with foreign keys on.
+        if (! in_array($app['config']->get('database.default'), ['sqlite', 'testing'], true)) {
             return;
         }
 
@@ -43,11 +61,16 @@ abstract class TestCase extends Orchestra
             'driver' => 'sqlite',
             'database' => ':memory:',
             'prefix' => '',
+            // Enforced like on mysql/pgsql, so cascading deletes behave the same on every driver.
+            'foreign_key_constraints' => true,
         ]);
     }
 
     protected function defineDatabaseMigrations(): void
     {
-        // $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        // The package migrations ship as .php.stub (published by the install command), which
+        // the migrator does not pick up; tests/database/migrations wraps them, plus the fixture
+        // tables.
+        $this->loadMigrationsFrom(__DIR__.'/database/migrations');
     }
 }

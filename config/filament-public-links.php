@@ -9,14 +9,14 @@ return [
     | Models
     |--------------------------------------------------------------------------
     |
-    | Every model the package touches is resolved from here, so the host app can
-    | swap any of them for its own subclass (rule D5). Never reference an App\
-    | class from package code.
+    | Swap either model for a subclass of your own (rule D5). The package
+    | resolves every model through these keys, never by class name.
     |
     */
 
     'models' => [
-        // 'example' => \Victorio\PublicLinks\Models\Example::class,
+        'link' => Victorio\PublicLinks\Models\PublicLink::class,
+        'access' => Victorio\PublicLinks\Models\PublicLinkAccess::class,
     ],
 
     /*
@@ -26,7 +26,8 @@ return [
     */
 
     'tables' => [
-        // 'examples' => 'victorio_examples', // snake_case, prefixed, never an App table
+        'links' => 'victorio_public_links',
+        'accesses' => 'victorio_public_link_accesses',
     ],
 
     /*
@@ -34,48 +35,83 @@ return [
     | Multi-tenancy
     |--------------------------------------------------------------------------
     |
-    | When the panel uses Filament tenancy, every query on a tenant-owned model
-    | is scoped to the current tenant (rule D9). The column below is the foreign
-    | key on the package tables pointing at the tenant model.
+    | When enabled and a Filament tenant is set, a new link stores the tenant's
+    | key in this column (rule D9). Without a current tenant the column stays
+    | null, so the package also works outside tenant-aware panels.
     |
     */
 
     'tenancy' => [
         'enabled' => true,
-        'foreign_key' => 'tenant_id',
+        'column' => 'tenant_id',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Public routes
+    | Public route
     |--------------------------------------------------------------------------
     |
-    | Rate limiting is mandatory on every public route (rule E3).
+    | Links look like https://your-app.test/{prefix}/{token}. No model id is
+    | ever part of the URL (rule E2).
     |
     */
 
-    'public_routes' => [
-        'enabled' => false,
+    'route' => [
         'prefix' => 'p',
         'domain' => null,
         'middleware' => ['web'],
-        'rate_limit' => '30,1',
+        'name' => 'public-links.',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Public tokens
+    | Rate limits
     |--------------------------------------------------------------------------
     |
-    | At least 32 bytes of randomness, stored as a hash only, compared in
-    | constant time, shown to the user once (rule E1).
+    | Per client IP (rule E3). Unknown tokens count against the stricter
+    | "misses" limiter as well.
+    |
+    */
+
+    'rate_limits' => [
+        'per_ip' => ['max_attempts' => 60, 'decay_seconds' => 60],
+        'misses_per_ip' => ['max_attempts' => 10, 'decay_seconds' => 600],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tokens
+    |--------------------------------------------------------------------------
+    |
+    | Random bytes per token; at least 32 (rule E1), lower values are rejected
+    | at boot. Tokens are looked up by their SHA-256 hash, and an encrypted
+    | copy (app key) lets admins copy a link again (ADR-0008). The hash
+    | algorithm is deliberately not configurable.
     |
     */
 
     'tokens' => [
         'bytes' => 32,
-        'hash' => 'sha256',
-        'default_ttl_days' => 30,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Link defaults
+    |--------------------------------------------------------------------------
+    |
+    | Every link expires: after ttl_days unless the issuer says otherwise, and
+    | never later than max_ttl_days. allow_permanent unlocks ->permanent()
+    | (no expiry at all). prune_links_after_days deletes expired and revoked
+    | links that long after they ended (null = keep them).
+    |
+    */
+
+    'defaults' => [
+        'ttl_days' => 30,
+        'max_ttl_days' => 365,
+        'allow_permanent' => false,
+        'max_uses' => null,
+        'prune_links_after_days' => null,
     ],
 
     /*
@@ -83,18 +119,56 @@ return [
     | Access log
     |--------------------------------------------------------------------------
     |
-    | Every public access is logged with a hashed IP; tokens and personal data
-    | are never logged in plain text (rules E4, E5).
-    |
-    | The log model uses MassPrunable with the retention period below, and the
-    | host app schedules model:prune — the README has to say so (rule E6).
+    | One row per public request: outcome, HMAC-hashed IP, truncated user
+    | agent, time (rules E4, E5). Rate-limited (429) requests are not logged.
+    | Rows older than prune_after_days are removed by `model:prune`, which the
+    | host app has to schedule (rule E6).
     |
     */
 
     'access_log' => [
-        'enabled' => true,
-        'ip_hash_algo' => 'sha256',
+        // Larastan only recognises the app's config/ directory; env() in a package config file is
+        // what rule D6 allows.
+        'ip_hash_key' => env('PUBLIC_LINKS_IP_HASH_KEY'), // @phpstan-ignore larastan.noEnvCallsOutsideOfConfig
+        'user_agent_max_length' => 255,
         'prune_after_days' => 90,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Branding
+    |--------------------------------------------------------------------------
+    |
+    | Used by the public layout and the 404/410 pages. Set a resolver class
+    | (implementing the BrandingResolver contract) to brand per tenant; null
+    | uses the values below.
+    |
+    */
+
+    'branding' => [
+        'resolver' => null,
+        'name' => null,
+        'logo_url' => null,
+        'primary_color' => '#1f2937',
+        'accent_color' => '#f59e0b',
+        'footer_text' => null,
+        'support_email' => null,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Response headers
+    |--------------------------------------------------------------------------
+    |
+    | Sent with every public response. no-referrer keeps the token in the URL
+    | from leaking to third-party assets.
+    |
+    */
+
+    'response_headers' => [
+        'Referrer-Policy' => 'no-referrer',
+        'X-Robots-Tag' => 'noindex, nofollow',
+        'Cache-Control' => 'no-store, private',
     ],
 
 ];

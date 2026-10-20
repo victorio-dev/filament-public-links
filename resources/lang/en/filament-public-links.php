@@ -4,31 +4,18 @@ declare(strict_types=1);
 
 return [
 
-    'plugin' => [
-        'label' => 'PublicLinks',
-        'navigation_group' => 'Victorio',
-    ],
-
-    'resource' => [
-        'label' => 'Example',
-        'plural_label' => 'Examples',
-    ],
-
-    'fields' => [
-        'name' => 'Name',
-        'expires_at' => 'Expires at',
-    ],
-
-    'actions' => [
-        'revoke' => [
-            'label' => 'Revoke',
-            'success' => 'The link has been revoked.',
-        ],
+    'status' => [
+        'active' => 'Active',
+        'expired' => 'Expired',
+        'revoked' => 'Revoked',
+        'exhausted' => 'Used up',
     ],
 
     'errors' => [
+        'not_found' => 'This link does not exist.',
         'expired' => 'This link has expired.',
         'revoked' => 'This link is no longer available.',
+        'exhausted' => 'This link has already been used.',
         'throttled' => 'Too many requests. Please try again later.',
     ],
 

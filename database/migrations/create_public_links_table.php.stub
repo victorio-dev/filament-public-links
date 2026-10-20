@@ -11,25 +11,39 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create($this->table(), function (Blueprint $table): void {
-            $table->id();
+            $table->ulid('id')->primary();
 
-            // Tenant foreign key, when the package model is tenant-owned (rule D9).
-            // $table->foreignId(config('filament-public-links.tenancy.foreign_key'))->constrained();
+            // Always strings, so int, ULID and UUID keyed models share one column (design.md a).
+            $table->string('linkable_type');
+            $table->string('linkable_id', 36);
+            $table->string('purpose', 64);
 
-            // Public tokens are stored as a hash only, never in plain text (rule E1).
-            // $table->string('token_hash', 64)->unique();
-            // $table->timestamp('expires_at')->nullable();
-            // $table->timestamp('revoked_at')->nullable();
+            // The current Filament tenant at issue time, when tenancy is on (rule D9).
+            $table->string($this->tenantColumn(), 36)->nullable()->index();
 
-            // Log and access-record tables only: the model uses MassPrunable with
-            // config('filament-public-links.access_log.prune_after_days'), so the column the
-            // prunable() query filters on carries an index (rule E6).
-            // $table->timestamp('accessed_at')->index();
-            // $table->string('ip_hash', 64);          // hashed, never the raw IP (E4, E5)
-            // $table->string('user_agent', 255)->nullable();
-            // $table->string('action', 32);
+            // SHA-256 of the token for the lookup, plus an encrypted copy for re-copying in
+            // Filament (rule E1, ADR-0008). The plain token is never stored.
+            $table->char('token_hash', 64)->unique();
+            $table->text('token_encrypted');
 
+            $table->string('label')->nullable();
+            $table->timestamp('expires_at')->nullable()->index();
+            $table->unsignedInteger('max_uses')->nullable();
+            $table->unsignedInteger('use_count')->default(0);
+            $table->unsignedInteger('open_count')->default(0);
+            $table->timestamp('first_opened_at')->nullable();
+            $table->timestamp('last_opened_at')->nullable();
+            $table->timestamp('revoked_at')->nullable();
+
+            $table->string('created_by_type')->nullable();
+            $table->string('created_by_id', 36)->nullable();
+            $table->string('revoked_by_type')->nullable();
+            $table->string('revoked_by_id', 36)->nullable();
+
+            $table->json('meta')->nullable();
             $table->timestamps();
+
+            $table->index(['linkable_type', 'linkable_id', 'purpose']);
         });
     }
 
@@ -41,8 +55,16 @@ return new class extends Migration
     private function table(): string
     {
         /** @var string $table */
-        $table = config('filament-public-links.tables.examples');
+        $table = config('filament-public-links.tables.links');
 
         return $table;
+    }
+
+    private function tenantColumn(): string
+    {
+        /** @var string $column */
+        $column = config('filament-public-links.tenancy.column');
+
+        return $column;
     }
 };

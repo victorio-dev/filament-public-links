@@ -13,7 +13,22 @@ marked `@internal`.
 
 ### Added
 
-- nothing yet
+- Data layer: `victorio_public_links` and `victorio_public_link_accesses` migrations (table names
+  from config), `PublicLink` and `PublicLinkAccess` models (swappable through config).
+- `HasPublicLinks` trait for models with int, ULID or UUID keys:
+  `publicLink($purpose)->expiresIn()|expiresAt()|permanent()->maxUses()->label()->meta()->issue()`
+  returning `IssuedPublicLink` (`url`, `token`, `link`); `publicLinks()`, `hasActivePublicLink()`,
+  `revokePublicLinks()`.
+- Tokens: 32 random bytes (base64url), SHA-256 lookup hash and an encrypted copy; never stored in
+  plain text. A token length below 32 bytes is refused at boot.
+- `PublicLink::status()`, `isUsable()`, `revoke()` (idempotent), atomic `recordUse()`, `url()`,
+  `active()` / `forPurpose()` scopes.
+- Events `PublicLinkCreated`, `PublicLinkRevoked`, `PublicLinkExhausted` (exactly once per link).
+- Tenancy: the current Filament tenant is stored with the link.
+- Pruning: access rows after `access_log.prune_after_days` (90), ended links after the optional
+  `defaults.prune_links_after_days`.
+- `php artisan filament-public-links:install`; publish tags `filament-public-links-config`,
+  `-migrations`, `-translations`, `-views`.
 
 ### Changed
 

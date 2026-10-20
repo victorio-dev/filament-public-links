@@ -4,7 +4,7 @@ Global rules: ../CLAUDE.md
 
 Package-level notes. The global rules are not repeated here — read them first, then this file.
 Keep this file current: it is the context for every task in this package. The detailed plan is
-[docs/design.md](docs/design.md); status: **design proposed, no business code yet**.
+[docs/design.md](docs/design.md); status: **step 1 of 5 (data layer) done**; next: registry and HTTP.
 
 ## Purpose
 

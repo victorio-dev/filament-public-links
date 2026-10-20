@@ -7,6 +7,7 @@ namespace Victorio\PublicLinks;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Victorio\PublicLinks\Support\TokenFactory;
 
 final class PublicLinksServiceProvider extends PackageServiceProvider
 {
@@ -23,7 +24,7 @@ final class PublicLinksServiceProvider extends PackageServiceProvider
             ->hasViews()
             // Every migration explicitly, by its stub filename without the extension. Never edit a
             // migration that is part of a tagged release — add a new one (rule A4).
-            // ->hasMigrations(['create_<table_name>_table'])
+            ->hasMigrations(['create_public_links_table', 'create_public_link_accesses_table'])
             ->hasInstallCommand(function (InstallCommand $command): void {
                 // php artisan filament-public-links:install (rule D11)
                 $command
@@ -35,6 +36,7 @@ final class PublicLinksServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        // Livewire components, Blade components, route registration, policy binding.
+        // Refuse a token length below the rule E1 minimum at boot, not at the first issue.
+        TokenFactory::bytes();
     }
 }

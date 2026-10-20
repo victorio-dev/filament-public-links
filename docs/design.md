@@ -68,6 +68,14 @@ when a host changes its mind. The cost is real and handled explicitly:
   and a UUID-keyed fixture model.
 - Int keys sort lexically in this column; nothing in the package orders by `linkable_id`.
 
+Learned in step 1 (`make check-db`):
+
+- MySQL normalises JSON key order, so `meta` comes back with its keys reordered. Nothing may rely
+  on the key order of `meta`; tests compare it order-insensitively.
+- Testbench's default `testing` sqlite connection has foreign keys off, which hides a missing
+  cascade. The package TestCase replaces it with an in-memory connection that enforces them, like
+  mysql and pgsql do.
+
 ### `victorio_public_link_accesses` (`tables.accesses`)
 
 | Column | Type | Notes |
