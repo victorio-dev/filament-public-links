@@ -480,3 +480,35 @@ it('shows the last open relative to now, in the app locale', function (): void {
     app()->setLocale('hu');
     linksTable($quote)->assertSee('3 perce');
 });
+
+it('shows the link note under the purpose and in the access log heading', function (): void {
+    $quote = IntRecord::create(['name' => 'Quote']);
+    $noted = $quote->publicLink('view')->label('Sent to Anna')->issue()->link;
+    $plain = $quote->publicLink('view')->issue()->link;
+
+    linksTable($quote)->assertSee('Sent to Anna');
+
+    linksTable($quote)
+        ->mountTableAction('viewPublicLinkAccessLog', $noted)
+        ->assertMountedActionModalSee('Access log — Sent to Anna');
+
+    linksTable($quote)
+        ->mountTableAction('viewPublicLinkAccessLog', $plain)
+        ->assertMountedActionModalSee('Access log')
+        ->assertMountedActionModalDontSee('Sent to Anna');
+
+    app()->setLocale('hu');
+    linksTable($quote)
+        ->mountTableAction('viewPublicLinkAccessLog', $noted)
+        ->assertMountedActionModalSee('Hozzáférési napló — Sent to Anna');
+});
+
+it('escapes the link note', function (): void {
+    $quote = IntRecord::create(['name' => 'Quote']);
+    $link = $quote->publicLink('view')->label('<script>alert(1)</script>')->issue()->link;
+
+    linksTable($quote)
+        ->assertDontSee('<script>alert(1)</script>', escape: false)
+        ->mountTableAction('viewPublicLinkAccessLog', $link)
+        ->assertMountedActionModalDontSee('<script>alert(1)</script>', escape: false);
+});

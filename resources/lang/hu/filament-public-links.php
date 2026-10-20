@@ -94,6 +94,7 @@ return [
             'access_log' => [
                 'label' => 'Hozzáférési napló',
                 'heading' => 'Hozzáférési napló',
+                'heading_with_note' => 'Hozzáférési napló — :note',
                 'description' => 'A link utolsó 50 lekérése. IP-címet nem tárolunk.',
                 'empty' => 'A linket még nem nyitották meg.',
                 'time' => 'Időpont',

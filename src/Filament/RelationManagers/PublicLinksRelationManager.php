@@ -76,7 +76,9 @@ final class PublicLinksRelationManager extends RelationManager
             ->columns([
                 TextColumn::make('purpose')
                     ->label(IssueLinkForm::label('columns.purpose'))
-                    ->formatStateUsing(static fn (PublicLink $record): string => PurposeLabel::for($record->linkable_type, $record->purpose)),
+                    ->formatStateUsing(static fn (PublicLink $record): string => PurposeLabel::for($record->linkable_type, $record->purpose))
+                    // The admin's note ("Sent to Anna"), as a muted second line when there is one.
+                    ->description(static fn (PublicLink $record): ?string => $record->label),
                 TextColumn::make('status')
                     ->label(IssueLinkForm::label('columns.status'))
                     ->state(static fn (PublicLink $record): string => $record->status()->value)

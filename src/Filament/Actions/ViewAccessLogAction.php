@@ -36,7 +36,9 @@ final class ViewAccessLogAction extends Action
             ->icon('heroicon-o-clock')
             ->color('gray')
             ->slideOver()
-            ->modalHeading(IssueLinkForm::label('actions.access_log.heading'))
+            ->modalHeading(static fn (PublicLink $record): string => $record->label === null
+                ? IssueLinkForm::label('actions.access_log.heading')
+                : __('filament-public-links::filament-public-links.filament.actions.access_log.heading_with_note', ['note' => $record->label]))
             ->modalDescription(IssueLinkForm::label('actions.access_log.description'))
             ->modalContent(static fn (PublicLink $record): View => PackageView::make('filament.access-log',
                 ['accesses' => $record->accesses()->orderByDesc('accessed_at')->orderByDesc('id')->limit(self::LIMIT)->get()],

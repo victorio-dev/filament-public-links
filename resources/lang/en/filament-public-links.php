@@ -94,6 +94,7 @@ return [
             'access_log' => [
                 'label' => 'Access log',
                 'heading' => 'Access log',
+                'heading_with_note' => 'Access log — :note',
                 'description' => 'The last 50 requests to this link. IP addresses are not stored.',
                 'empty' => 'This link has not been opened yet.',
                 'time' => 'Time',

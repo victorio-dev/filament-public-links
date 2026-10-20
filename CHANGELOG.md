@@ -25,7 +25,8 @@ First release.
   footer and contact address, light and dark mode, readable on phones; branded 404 and 410 pages.
   Brand per tenant with your own `BrandingResolver`.
 - **Filament UI.** A relation manager for any resource (status, expiry, uses, opens; create, copy,
-  revoke, bulk revoke, access log) and `IssuePublicLinkAction` for any page or table. Permissions
+  revoke, bulk revoke, access log; the admin's note on a link shows under its purpose) and
+  `IssuePublicLinkAction` for any page or table. Permissions
   follow the owner record's `view` / `update` policy, tenancy is respected, and an optional plugin
   sets expiry options, purpose labels and the date format. English and Hungarian.
 - **Security by default.** Tokens are looked up by their SHA-256 hash and compared in constant
