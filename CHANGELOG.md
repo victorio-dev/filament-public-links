@@ -7,71 +7,32 @@ marked `@internal`.
 
 ## [Unreleased]
 
-### Breaking
-
-- nothing yet
-
 ### Added
 
-- Data layer: `victorio_public_links` and `victorio_public_link_accesses` migrations (table names
-  from config), `PublicLink` and `PublicLinkAccess` models (swappable through config).
-- `HasPublicLinks` trait for models with int, ULID or UUID keys:
-  `publicLink($purpose)->expiresIn()|expiresAt()|permanent()->maxUses()->label()->meta()->issue()`
-  returning `IssuedPublicLink` (`url`, `token`, `link`); `publicLinks()`, `hasActivePublicLink()`,
-  `revokePublicLinks()`.
-- Tokens: 32 random bytes (base64url), SHA-256 lookup hash and an encrypted copy; never stored in
-  plain text. A token length below 32 bytes is refused at boot.
-- `PublicLink::status()`, `isUsable()`, `revoke()` (idempotent), atomic `recordUse()`, `url()`,
-  `active()` / `forPurpose()` scopes.
-- Events `PublicLinkCreated`, `PublicLinkRevoked`, `PublicLinkExhausted` (exactly once per link).
-- Tenancy: the current Filament tenant is stored with the link.
-- Pruning: access rows after `access_log.prune_after_days` (90), ended links after the optional
-  `defaults.prune_links_after_days`.
-- Handler registry: `PublicLinks::handle(Model::class, 'purpose', Handler::class)`, the
-  `PublicLinkHandler` and `HandlesPublicLinkActions` contracts, `PublicLinkHandlerBase`,
-  `PublicLinkVisit`. Issuing a link for a model and purpose without a handler throws
-  `UnknownPurpose`; a second handler for the same pair throws `DuplicateHandler`.
-- Public routes `GET /{prefix}/{token}` and `POST /{prefix}/{token}/{action}` (prefix, domain,
-  middleware and route names from config; POST is CSRF-protected by the `web` group).
-- Per-IP rate limit and a stricter limit for unknown tokens; 429s are not logged.
-- Token resolution by SHA-256 lookup and constant-time comparison, the same steps for unknown
-  tokens; 404 for unknown, 410 for expired, revoked, used-up links or a deleted target.
-- Access log rows for every answered request: outcome, HMAC of the IP, truncated user agent, the
-  link's tenant.
-- The handler decides what a use is (`countsOpensAsUses()`, or `recordUse()` in an action).
-- Events `PublicLinkOpened`, `PublicLinkFirstOpened` (once per link), `PublicLinkActionPerformed`.
-- `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow` and `Cache-Control: no-store`
-  on every public response.
-- Branded public layout `<x-filament-public-links::layout>` with `title`, default and `footer`
-  slots: inline CSS, light and dark mode, no external assets, `lang` from the app locale,
-  `header`/`main`/`footer` landmarks, brand-colour text picked for WCAG AA contrast.
-- Branding config (`name`, `logo_url`, `primary_color`, `footer_text`, `contact_email`,
-  `show_powered_by`) and the `BrandingResolver` contract with `ConfigBrandingResolver` as the
-  default; a resolver bound in `branding.resolver` receives the link, for per-tenant branding.
-  `Branding::make()` cleans every value (colours, logo URLs, e-mail addresses).
-- The 404/410 pages use the layout; 410 pages offer `contact_email` when it is set.
-- Filament: `PublicLinksRelationManager` (status, expiry, uses, opens; status filter; new link,
-  copy link, revoke, bulk revoke, access log) and `IssuePublicLinkAction` for any resource page
-  or table. The URL is shown once after creating a link and decrypted only when "Copy link" is
-  clicked; copying falls back to selecting the text when the Clipboard API is unavailable.
-  Permissions follow the owner record's `view` / `update` policy; with Filament tenancy only the
-  current tenant's links are listed. Optional `PublicLinksPlugin` options: `expiryOptions()`,
-  `defaultExpiry()`, `purposeLabels()`, `dateTimeFormat()`. English and Hungarian labels.
-- `PublicLinks::handle()` takes an optional label (text or translation key); `labelFor()` resolves
-  it, falling back to translations for `view`, `accept`, `download` and to a readable name.
-- The relation manager refreshes when links are created or revoked elsewhere on the page
-  (`PublicLinksRelationManager::LINKS_CHANGED`).
-- The URL modal shows the expiry ("Never expires" for permanent links) and the usage limit, and
-  only a "Close" button after a link was created.
-- Times in the table, the access log and the URL modal use Filament's display timezone, the app
-  locale and one format; a custom expiry date is valid through that day in the display timezone.
-- `php artisan filament-public-links:install`; publish tags `filament-public-links-config`,
-  `-migrations`, `-translations`, `-views`.
+First release.
 
-### Changed
-
-- nothing yet
-
-### Fixed
-
-- nothing yet
+- **Public links for any Eloquent model.** Add `HasPublicLinks` to a model and issue a link with
+  `$model->publicLink('view')->expiresIn(days: 14)->maxUses(5)->issue()`. Works with int, ULID and
+  UUID keys, on SQLite, MySQL and PostgreSQL.
+- **Expiry, revocation and usage limits.** Links expire by default (at most 365 days, both
+  configurable; permanent links only when you allow them), can be revoked at any time, and can be
+  limited to a number of uses — counted on open or only on a successful action, as the handler
+  decides.
+- **Handlers decide what a link shows.** Register a handler per model and purpose with
+  `PublicLinks::handle()`, optionally with a label; handlers can also accept CSRF-protected POST
+  actions (e.g. "accept the quote").
+- **A branded public page.** `<x-filament-public-links::layout>` with your name, logo, colour,
+  footer and contact address, light and dark mode, readable on phones; branded 404 and 410 pages.
+  Brand per tenant with your own `BrandingResolver`.
+- **Filament UI.** A relation manager for any resource (status, expiry, uses, opens; create, copy,
+  revoke, bulk revoke, access log) and `IssuePublicLinkAction` for any page or table. Permissions
+  follow the owner record's `view` / `update` policy, tenancy is respected, and an optional plugin
+  sets expiry options, purpose labels and the date format. English and Hungarian.
+- **Security by default.** Tokens are looked up by their SHA-256 hash and compared in constant
+  time; an encrypted copy lets admins copy a link again. Per-IP rate limits, `no-referrer`,
+  `noindex` and `no-store` headers, no model ids in URLs.
+- **Access log.** Every public request is logged with an HMAC of the IP and a shortened user agent,
+  and pruned after 90 days via `model:prune`.
+- **Events** for created, opened, first opened, action performed, revoked and used-up links.
+- `php artisan filament-public-links:install`, publish tags for config, migrations, translations
+  and views.

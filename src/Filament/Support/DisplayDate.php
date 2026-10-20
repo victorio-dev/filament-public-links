@@ -22,6 +22,14 @@ final class DisplayDate
         return PublicLinksPlugin::current()->getDateTimeFormat() ?? IssueLinkForm::label('date_time_format');
     }
 
+    /**
+     * "3 minutes ago" / "3 perce", in the app locale (passed explicitly, like format()).
+     */
+    public static function relative(?CarbonInterface $date): ?string
+    {
+        return $date?->copy()->locale(app()->getLocale())->diffForHumans();
+    }
+
     public static function format(?CarbonInterface $date): ?string
     {
         // The app locale is passed explicitly: App::setLocale() does not change Carbon's global

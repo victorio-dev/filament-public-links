@@ -576,3 +576,17 @@ commit, and CHANGELOG entries.
 7. **Optional cleanup** of expired and revoked links: `defaults.prune_links_after_days`, default
    null (off).
 8. **First version 0.1.0**; the human submits it to Packagist.
+
+## l) Planned for 0.2 (not implemented)
+
+**Overview of all public links.** An optional Filament page listing every public link across all
+models, off by default and switched on with a plugin option (e.g. `->linksOverview()`).
+
+- Own permission: the `PublicLink` model's `viewAny` policy (not the owner records' policies), so
+  a host can give support staff the overview without access to every record.
+- Tenant-scoped like the relation manager.
+- Filters: status, model type (morph class, labelled), expiring soon (within N days).
+- Columns as in the relation manager plus the linked record (title via the owner's resource when
+  one exists); copy, revoke, access log per row, bulk revoke.
+- Same Filament-compatibility rules (C1) and the internals list in section f applies.
+

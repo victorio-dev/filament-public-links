@@ -102,7 +102,7 @@ final class PublicLinksRelationManager extends RelationManager
                     ->numeric(),
                 TextColumn::make('last_opened_at')
                     ->label(IssueLinkForm::label('columns.last_opened_at'))
-                    ->since()
+                    ->formatStateUsing(static fn (PublicLink $record): ?string => DisplayDate::relative($record->last_opened_at))
                     ->tooltip(static fn (PublicLink $record): ?string => DisplayDate::format($record->last_opened_at))
                     ->placeholder('—')
                     ->sortable(),

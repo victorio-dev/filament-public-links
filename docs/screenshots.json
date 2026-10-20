@@ -1,0 +1,208 @@
+{
+    "prepare": "demo:screenshots filament-public-links",
+    "host": "app.acme.test",
+    "login": {
+        "path": "/admin/login",
+        "email": "input[type=email]",
+        "password": "input[type=password]"
+    },
+    "shots": [
+        {
+            "name": "relation-manager",
+            "path": "{documentEditPath}",
+            "viewport": {
+                "width": 1440,
+                "height": 900
+            },
+            "colorSchemes": [
+                "light",
+                "dark"
+            ],
+            "auth": true,
+            "steps": [
+                {
+                    "wait": ".fi-resource-relation-manager table"
+                }
+            ],
+            "capture": ".fi-resource-relation-manager",
+            "format": "png",
+            "hide": [
+                ".fi-sidebar"
+            ]
+        },
+        {
+            "name": "plugin-image",
+            "path": "{documentEditPath}",
+            "viewport": {
+                "width": 1280,
+                "height": 720
+            },
+            "scale": 2,
+            "colorSchemes": [
+                "light"
+            ],
+            "auth": true,
+            "steps": [
+                {
+                    "wait": ".fi-resource-relation-manager table"
+                },
+                {
+                    "scrollToTop": ".fi-resource-relation-manager"
+                }
+            ],
+            "hide": [
+                ".fi-sidebar",
+                ".fi-topbar",
+                ".fi-header",
+                "form"
+            ],
+            "capture": "viewport",
+            "format": "jpeg",
+            "quality": 85
+        },
+        {
+            "name": "access-log",
+            "path": "{documentEditPath}",
+            "viewport": {
+                "width": 1440,
+                "height": 900
+            },
+            "colorSchemes": [
+                "light",
+                "dark"
+            ],
+            "auth": true,
+            "steps": [
+                {
+                    "wait": ".fi-resource-relation-manager table"
+                },
+                {
+                    "click": ".fi-resource-relation-manager tbody tr:first-child button:has-text('Access log')"
+                },
+                {
+                    "pause": 1500
+                }
+            ],
+            "capture": "viewport",
+            "format": "jpeg",
+            "hide": [
+                ".fi-sidebar"
+            ],
+            "quality": 82
+        },
+        {
+            "name": "new-link-form",
+            "path": "{documentEditPath}",
+            "viewport": {
+                "width": 1440,
+                "height": 900
+            },
+            "colorSchemes": [
+                "light",
+                "dark"
+            ],
+            "auth": true,
+            "steps": [
+                {
+                    "wait": ".fi-resource-relation-manager table"
+                },
+                {
+                    "click": ".fi-resource-relation-manager button:has-text('New public link')"
+                },
+                {
+                    "wait": ".fi-modal-window:visible"
+                }
+            ],
+            "capture": ".fi-modal-window:visible",
+            "format": "png",
+            "hide": [
+                ".fi-sidebar"
+            ]
+        },
+        {
+            "name": "gone-410",
+            "path": "{revokedPath}",
+            "viewport": {
+                "width": 1280,
+                "height": 720
+            },
+            "colorSchemes": [
+                "light",
+                "dark"
+            ],
+            "capture": "viewport",
+            "format": "jpeg",
+            "quality": 82,
+            "steps": []
+        },
+        {
+            "name": "public-page",
+            "path": "{publicPath}",
+            "viewport": {
+                "width": 1280,
+                "height": 720
+            },
+            "colorSchemes": [
+                "light",
+                "dark"
+            ],
+            "capture": "viewport",
+            "format": "jpeg",
+            "quality": 82,
+            "steps": []
+        },
+        {
+            "name": "public-page-mobile",
+            "path": "{publicPath}",
+            "viewport": {
+                "width": 390,
+                "height": 760
+            },
+            "scale": 2,
+            "colorSchemes": [
+                "light",
+                "dark"
+            ],
+            "capture": "viewport",
+            "format": "jpeg",
+            "quality": 80,
+            "steps": []
+        },
+        {
+            "name": "url-modal",
+            "path": "{documentEditPath}",
+            "viewport": {
+                "width": 1440,
+                "height": 900
+            },
+            "colorSchemes": [
+                "light",
+                "dark"
+            ],
+            "auth": true,
+            "steps": [
+                {
+                    "wait": ".fi-resource-relation-manager table"
+                },
+                {
+                    "click": ".fi-resource-relation-manager button:has-text('New public link')"
+                },
+                {
+                    "wait": ".fi-modal-window:visible"
+                },
+                {
+                    "click": ".fi-modal-window:visible button:has-text('Create link')"
+                },
+                {
+                    "wait": ".fi-modal-window:visible button:has-text('Copy')"
+                }
+            ],
+            "hide": [
+                ".fi-no",
+                ".fi-sidebar"
+            ],
+            "capture": ".fi-modal-window:visible",
+            "format": "png"
+        }
+    ]
+}

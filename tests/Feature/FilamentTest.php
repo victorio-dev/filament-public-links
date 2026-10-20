@@ -467,3 +467,16 @@ it('labels purposes: plugin first, then the label given to handle(), then transl
 
     linksTable($quote)->assertSee('Plugin label')->assertDontSee('Accept the quote');
 });
+
+it('shows the last open relative to now, in the app locale', function (): void {
+    Carbon::setTestNow('2026-10-20 12:00:00');
+    $quote = IntRecord::create(['name' => 'Quote']);
+    $link = $quote->publicLink('view')->issue()->link;
+    $link->markOpened();
+    Carbon::setTestNow('2026-10-20 12:03:00');
+
+    linksTable($quote)->assertSee('3 minutes ago');
+
+    app()->setLocale('hu');
+    linksTable($quote)->assertSee('3 perce');
+});
