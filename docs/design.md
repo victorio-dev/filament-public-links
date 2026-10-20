@@ -76,6 +76,19 @@ Learned in step 1 (`make check-db`):
   cascade. The package TestCase replaces it with an in-memory connection that enforces them, like
   mysql and pgsql do.
 
+Learned in step 2:
+
+- Route settings (prefix, domain, middleware, names) apply at boot. Tests that need different
+  values live in `tests/Config/` with their own TestCase (`SharePrefixTestCase`), not in a runtime
+  `config()->set()`.
+- A malformed token never matches the route: the framework answers 404 before any lookup, and no
+  access row is written — such a request is not an access to any link.
+- Laravel skips CSRF checks in unit tests; the 419 test binds a strict subclass of
+  `ValidateCsrfToken` under the name the `web` group uses (`PreventRequestForgery` on Laravel 13,
+  `ValidateCsrfToken` on 12). Version-specific in test code only.
+- Of the "same steps" on hit and miss, only the misses limiter differs: it is hit on a miss only,
+  so that brute force runs into it.
+
 ### `victorio_public_link_accesses` (`tables.accesses`)
 
 | Column | Type | Notes |

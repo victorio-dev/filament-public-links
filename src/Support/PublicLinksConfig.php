@@ -69,6 +69,66 @@ final class PublicLinksConfig
         return self::nullableString('route.domain');
     }
 
+    /**
+     * Route name prefix, e.g. "public-links." for "public-links.show".
+     */
+    public static function routeName(): string
+    {
+        return self::string('route.name', 'public-links.');
+    }
+
+    /**
+     * @return list<string|class-string>
+     */
+    public static function routeMiddleware(): array
+    {
+        $middleware = config(self::KEY.'.route.middleware', ['web']);
+
+        return is_array($middleware) ? array_values(array_filter($middleware, is_string(...))) : ['web'];
+    }
+
+    /**
+     * @return array{max_attempts: int, decay_seconds: int}
+     */
+    public static function rateLimit(string $name): array
+    {
+        $defaults = $name === 'misses_per_ip'
+            ? ['max_attempts' => 10, 'decay_seconds' => 600]
+            : ['max_attempts' => 60, 'decay_seconds' => 60];
+
+        return [
+            'max_attempts' => self::int("rate_limits.{$name}.max_attempts", $defaults['max_attempts']),
+            'decay_seconds' => self::int("rate_limits.{$name}.decay_seconds", $defaults['decay_seconds']),
+        ];
+    }
+
+    public static function userAgentMaxLength(): int
+    {
+        return max(1, self::int('access_log.user_agent_max_length', 255));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function responseHeaders(): array
+    {
+        $headers = config(self::KEY.'.response_headers', []);
+
+        if (! is_array($headers)) {
+            return [];
+        }
+
+        $clean = [];
+
+        foreach ($headers as $name => $value) {
+            if (is_string($name) && is_string($value)) {
+                $clean[$name] = $value;
+            }
+        }
+
+        return $clean;
+    }
+
     public static function tokenBytes(): int
     {
         return self::int('tokens.bytes', 32);

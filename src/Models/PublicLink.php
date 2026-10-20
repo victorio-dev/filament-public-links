@@ -286,6 +286,33 @@ class PublicLink extends Model
     }
 
     /**
+     * Counts a successful open: open_count, last_opened_at, and first_opened_at on the first one.
+     * Returns true for exactly one caller, the first open, however many requests race.
+     *
+     * @internal Called by the public route.
+     */
+    public function markOpened(): bool
+    {
+        $now = now();
+
+        static::query()->whereKey($this->getKey())->increment('open_count', 1, ['last_opened_at' => $now]);
+
+        $first = static::query()
+            ->whereKey($this->getKey())
+            ->whereNull('first_opened_at')
+            ->update(['first_opened_at' => $now]) === 1;
+
+        $fresh = static::query()->whereKey($this->getKey())->first();
+
+        if ($fresh !== null) {
+            $this->forceFill($fresh->only(['open_count', 'first_opened_at', 'last_opened_at', 'updated_at']))
+                ->syncOriginal();
+        }
+
+        return $first;
+    }
+
+    /**
      * The public URL, decrypted from the stored copy. Null when the copy cannot be decrypted,
      * e.g. after an APP_KEY rotation without previous_keys; the link itself still works.
      */

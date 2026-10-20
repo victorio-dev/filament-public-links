@@ -1,7 +1,7 @@
 # victorio/filament-public-links
 
 Expiring, revocable public links to any Eloquent model, opened without login — with an access log,
-a branded public page and a Filament UI. Status: in design, see [docs/design.md](docs/design.md).
+a branded public page and a Filament UI. Status: in development, see [docs/design.md](docs/design.md).
 
 - Requires PHP `^8.3`, Laravel `^12.0|^13.0`, Filament `^4.0|^5.0`
 - Free and open source (MIT), on public Packagist

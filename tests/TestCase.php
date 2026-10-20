@@ -5,10 +5,30 @@ declare(strict_types=1);
 namespace Victorio\PublicLinks\Tests;
 
 use Orchestra\Testbench\TestCase as Orchestra;
+use Victorio\PublicLinks\Facades\PublicLinks;
 use Victorio\PublicLinks\PublicLinksServiceProvider;
+use Victorio\PublicLinks\Tests\Fixtures\Handlers\AcceptRecord;
+use Victorio\PublicLinks\Tests\Fixtures\Handlers\ShowRecord;
+use Victorio\PublicLinks\Tests\Fixtures\IntRecord;
+use Victorio\PublicLinks\Tests\Fixtures\UlidRecord;
+use Victorio\PublicLinks\Tests\Fixtures\UuidRecord;
 
 abstract class TestCase extends Orchestra
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        ShowRecord::$lastVisit = null;
+        ShowRecord::$calls = 0;
+        AcceptRecord::$calls = 0;
+
+        foreach ([IntRecord::class, UlidRecord::class, UuidRecord::class] as $model) {
+            PublicLinks::handle($model, 'view', ShowRecord::class);
+            PublicLinks::handle($model, 'accept', AcceptRecord::class);
+        }
+    }
+
     /**
      * The $app parameter stays untyped because the parent declares it untyped;
      * adding a native type here would break the signature (rule D2 exception).

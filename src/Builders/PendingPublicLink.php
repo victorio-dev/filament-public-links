@@ -14,6 +14,8 @@ use Victorio\PublicLinks\Events\PublicLinkCreated;
 use Victorio\PublicLinks\Exceptions\ExpiryTooFar;
 use Victorio\PublicLinks\Exceptions\InvalidPublicLink;
 use Victorio\PublicLinks\Exceptions\PermanentLinksDisabled;
+use Victorio\PublicLinks\Exceptions\UnknownPurpose;
+use Victorio\PublicLinks\PublicLinkRegistry;
 use Victorio\PublicLinks\Support\ModelKey;
 use Victorio\PublicLinks\Support\PublicLinksConfig;
 use Victorio\PublicLinks\Support\PublicLinkUrl;
@@ -161,6 +163,12 @@ final class PendingPublicLink
 
         if (preg_match(self::PURPOSE_PATTERN, $this->purpose) !== 1) {
             throw InvalidPublicLink::purpose($this->purpose);
+        }
+
+        $morphClass = $this->linkable->getMorphClass();
+
+        if (! app(PublicLinkRegistry::class)->has($morphClass, $this->purpose)) {
+            throw UnknownPurpose::for($morphClass, $this->purpose);
         }
 
         if ($this->maxUses !== null && $this->maxUses < 1) {

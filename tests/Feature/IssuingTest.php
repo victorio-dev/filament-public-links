@@ -94,17 +94,6 @@ it('never issues the same token twice', function (): void {
     expect($tokens->unique())->toHaveCount(100);
 });
 
-it('builds the public URL from the route prefix, without any model id', function (): void {
-    config()->set('filament-public-links.route.prefix', 'share');
-    $record = IntRecord::create(['name' => 'Quote']);
-
-    $issued = $record->publicLink('view')->issue();
-
-    expect($issued->url)->toBe(url('share/'.$issued->token))
-        ->and($issued->link->url())->toBe($issued->url)
-        ->and($issued->url)->not->toContain($issued->link->id);
-});
-
 it('returns no URL instead of failing when the app key changed', function (): void {
     $issued = IntRecord::create(['name' => 'Quote'])->publicLink('view')->issue();
 
