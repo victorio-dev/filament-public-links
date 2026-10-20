@@ -1,0 +1,65 @@
+{
+    "name": "victorio/filament-public-links",
+    "description": "Expiring, revocable public links for any Eloquent model, with an access log, a branded public page and a Filament UI.",
+    "keywords": [
+        "laravel",
+        "filament",
+        "public-links",
+        "share",
+        "victorio"
+    ],
+    "homepage": "https://github.com/victorio-dev/filament-public-links",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Victorio",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "filament/filament": "^4.0|^5.0",
+        "illuminate/contracts": "^12.0|^13.0",
+        "spatie/laravel-package-tools": "^1.16",
+        "victorio/support": "^0.2"
+    },
+    "require-dev": {
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.18",
+        "orchestra/testbench": "^10.0|^11.0",
+        "pestphp/pest": "^3.0|^4.0",
+        "pestphp/pest-plugin-laravel": "^3.0|^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Victorio\\PublicLinks\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Victorio\\PublicLinks\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "analyse": "vendor/bin/phpstan analyse",
+        "format": "vendor/bin/pint",
+        "format-check": "vendor/bin/pint --test"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        },
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Victorio\\PublicLinks\\PublicLinksServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
