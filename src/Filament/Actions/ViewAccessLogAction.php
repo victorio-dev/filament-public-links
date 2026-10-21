@@ -16,7 +16,8 @@ use Victorio\PublicLinks\Support\PackageView;
  * The last 50 access rows of a link in a slide-over: time, outcome, action, shortened user agent.
  * The IP hash is never shown (and the raw IP is never stored). Requires `view`.
  *
- * @internal
+ * Public API (row action of a PublicLink table): `make()`, Filament's modifiers and
+ * `configureUsing()` work as on any action.
  */
 final class ViewAccessLogAction extends Action
 {

@@ -38,8 +38,10 @@ Everything listed here follows semver; everything else in `src/` is `@internal`.
   handlers implement `Contracts\PublicLinkHandler` (+ `HandlesPublicLinkActions`) and receive a
   `Data\PublicLinkVisit` (`link`, `linkable`, `request`, `action`, `access`).
 - `Filament\RelationManagers\PublicLinksRelationManager`, `Filament\Actions\IssuePublicLinkAction`
-  (extendable), `PublicLinksPlugin`; from 0.2 `Support\IpHasher` (the access log's IP HMAC, a
-  stable contract).
+  (extendable), `CopyPublicLinkAction`, `ViewAccessLogAction`, `RevokePublicLinkAction`,
+  `RevokePublicLinksBulkAction`, `PublicLinksPlugin` (incl. `rowActions()`,
+  `modify{Row,Header,Toolbar}ActionsUsing()`); from 0.2 `Support\IpHasher` (the access log's IP
+  HMAC, a stable contract).
 - `<x-filament-public-links::layout>`, `Contracts\BrandingResolver`, `Events\*` (created, opened,
   first opened, action performed, revoked, exhausted), `Exceptions\*`.
 - Config keys in `config/filament-public-links.php` (design.md g); translation keys in

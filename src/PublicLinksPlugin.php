@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Victorio\PublicLinks;
 
+use Closure;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Contracts\Plugin;
 use Filament\Facades\Filament;
 use Filament\Panel;
 use InvalidArgumentException;
+use Victorio\PublicLinks\Filament\Support\ActionLayout;
 
 /**
  * Optional panel plugin. The relation manager and IssuePublicLinkAction work without it; register
@@ -18,6 +22,8 @@ use InvalidArgumentException;
  *         ->defaultExpiry(7)
  *         ->purposeLabels(['view' => 'View quote', 'accept' => 'Accept quote'])
  *         ->dateTimeFormat('d/m/Y H:i')
+ *         ->rowActions('icons')                        // 'labels' (default), 'icons' or 'group'
+ *         ->modifyRowActionsUsing(fn (array $actions): array => [$actions['copyPublicLink']])
  */
 final class PublicLinksPlugin implements Plugin
 {
@@ -34,6 +40,23 @@ final class PublicLinksPlugin implements Plugin
     private array $purposeLabels = [];
 
     private ?string $dateTimeFormat = null;
+
+    private string $rowActions = ActionLayout::LABELS;
+
+    /**
+     * @var (Closure(array<string, Action>): array<Action|ActionGroup>)|null
+     */
+    private ?Closure $modifyRowActionsUsing = null;
+
+    /**
+     * @var (Closure(array<string, Action>): array<Action|ActionGroup>)|null
+     */
+    private ?Closure $modifyHeaderActionsUsing = null;
+
+    /**
+     * @var (Closure(array<string, Action>): array<Action|ActionGroup>)|null
+     */
+    private ?Closure $modifyToolbarActionsUsing = null;
 
     public static function make(): static
     {
@@ -153,5 +176,84 @@ final class PublicLinksPlugin implements Plugin
     public function getDateTimeFormat(): ?string
     {
         return $this->dateTimeFormat;
+    }
+
+    /**
+     * How the links table shows its row actions: `labels` (default, Filament's usual labelled
+     * actions), `icons` (icon buttons, the label as tooltip) or `group` (one "more" menu).
+     */
+    public function rowActions(string $preset): self
+    {
+        $this->rowActions = ActionLayout::preset($preset);
+
+        return $this;
+    }
+
+    public function getRowActions(): string
+    {
+        return $this->rowActions;
+    }
+
+    /**
+     * Changes the row actions of the links table (copy, access log, revoke). The closure receives
+     * them keyed by name, already styled by rowActions(), and returns the ones to show in that
+     * order, modified or with your own added; `group` wraps the result.
+     *
+     * @param  (Closure(array<string, Action>): array<Action|ActionGroup>)|null  $callback
+     */
+    public function modifyRowActionsUsing(?Closure $callback): self
+    {
+        $this->modifyRowActionsUsing = $callback;
+
+        return $this;
+    }
+
+    /**
+     * @return (Closure(array<string, Action>): array<Action|ActionGroup>)|null
+     */
+    public function getModifyRowActionsUsing(): ?Closure
+    {
+        return $this->modifyRowActionsUsing;
+    }
+
+    /**
+     * Changes the header actions of the links table (new link), like modifyRowActionsUsing().
+     *
+     * @param  (Closure(array<string, Action>): array<Action|ActionGroup>)|null  $callback
+     */
+    public function modifyHeaderActionsUsing(?Closure $callback): self
+    {
+        $this->modifyHeaderActionsUsing = $callback;
+
+        return $this;
+    }
+
+    /**
+     * @return (Closure(array<string, Action>): array<Action|ActionGroup>)|null
+     */
+    public function getModifyHeaderActionsUsing(): ?Closure
+    {
+        return $this->modifyHeaderActionsUsing;
+    }
+
+    /**
+     * Changes the bulk actions of the links table (revoke selected), like modifyRowActionsUsing();
+     * the result goes into Filament's bulk-action menu.
+     *
+     * @param  (Closure(array<string, Action>): array<Action|ActionGroup>)|null  $callback
+     */
+    public function modifyToolbarActionsUsing(?Closure $callback): self
+    {
+        $this->modifyToolbarActionsUsing = $callback;
+
+        return $this;
+    }
+
+    /**
+     * @return (Closure(array<string, Action>): array<Action|ActionGroup>)|null
+     */
+    public function getModifyToolbarActionsUsing(): ?Closure
+    {
+        return $this->modifyToolbarActionsUsing;
     }
 }

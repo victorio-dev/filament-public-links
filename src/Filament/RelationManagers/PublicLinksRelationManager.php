@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Victorio\PublicLinks\Filament\RelationManagers;
 
-use Filament\Actions\BulkActionGroup;
 use Filament\Facades\Filament;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
@@ -19,11 +18,13 @@ use Victorio\PublicLinks\Filament\Actions\IssuePublicLinkAction;
 use Victorio\PublicLinks\Filament\Actions\RevokePublicLinkAction;
 use Victorio\PublicLinks\Filament\Actions\RevokePublicLinksBulkAction;
 use Victorio\PublicLinks\Filament\Actions\ViewAccessLogAction;
+use Victorio\PublicLinks\Filament\Support\ActionLayout;
 use Victorio\PublicLinks\Filament\Support\Authorizer;
 use Victorio\PublicLinks\Filament\Support\DisplayDate;
 use Victorio\PublicLinks\Filament\Support\IssueLinkForm;
 use Victorio\PublicLinks\Filament\Support\PurposeLabel;
 use Victorio\PublicLinks\Models\PublicLink;
+use Victorio\PublicLinks\PublicLinksPlugin;
 use Victorio\PublicLinks\Support\PublicLinksConfig;
 use Victorio\Support\Database\ModelKey;
 
@@ -36,7 +37,8 @@ use Victorio\Support\Database\ModelKey;
  *     }
  *
  * Seeing the links and their access log needs `view` on the owner record; creating, copying and
- * revoking need `update`. With Filament tenancy only the current tenant's links are listed.
+ * revoking need `update`. With Filament tenancy only the current tenant's links are listed. The
+ * actions' layout and lists are set on PublicLinksPlugin (rowActions(), modify*ActionsUsing()).
  */
 final class PublicLinksRelationManager extends RelationManager
 {
@@ -69,6 +71,8 @@ final class PublicLinksRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
+        $plugin = PublicLinksPlugin::current();
+
         return $table
             ->recordTitle(static fn (PublicLink $record): string => PurposeLabel::for($record->linkable_type, $record->purpose))
             ->modifyQueryUsing(static fn (Builder $query): Builder => self::scopeToTenant($query))
@@ -127,19 +131,18 @@ final class PublicLinksRelationManager extends RelationManager
                     }),
             ])
             ->emptyStateHeading(IssueLinkForm::label('relation_manager.empty'))
-            ->headerActions([
+            // The layout and the lists come from the plugin (rowActions(), modify*ActionsUsing()).
+            ->headerActions(ActionLayout::modify([
                 IssuePublicLinkAction::make(),
-            ])
-            ->recordActions([
+            ], $plugin->getModifyHeaderActionsUsing()))
+            ->recordActions(ActionLayout::rows([
                 CopyPublicLinkAction::make(),
                 ViewAccessLogAction::make(),
                 RevokePublicLinkAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    RevokePublicLinksBulkAction::make(),
-                ]),
-            ]);
+            ], $plugin->getRowActions(), $plugin->getModifyRowActionsUsing()))
+            ->toolbarActions(ActionLayout::toolbar([
+                RevokePublicLinksBulkAction::make(),
+            ], $plugin->getModifyToolbarActionsUsing()));
     }
 
     /**

@@ -17,7 +17,8 @@ use Victorio\PublicLinks\Models\PublicLink;
  * Revokes the selected links after confirmation; already revoked ones are left as they are.
  * Requires `update` on the owner record.
  *
- * @internal
+ * Public API (bulk action of a PublicLink table): `make()`, Filament's modifiers and
+ * `configureUsing()` work as on any action.
  */
 final class RevokePublicLinksBulkAction extends BulkAction
 {

@@ -599,6 +599,12 @@ models, off by default and switched on with a plugin option (e.g. `->linksOvervi
 - Columns as in the relation manager plus the linked record (title via the owner's resource when
   one exists); copy, revoke, access log per row, bulk revoke.
 - Same Filament-compatibility rules (C1) and the internals list in section f applies.
+- Navigation from the plugin, as for every package (docs/conventions.md, "Filament appearance"):
+  `linksOverview(bool)` registers the page (off by default); `overviewNavigationGroup()`,
+  `overviewNavigationIcon()` (default `heroicon-o-link`), `overviewNavigationSort()`,
+  `overviewNavigationLabel()` (default: translation) and `overviewNavigationBadge(bool)` (active
+  links count, off by default). Its row, header and bulk actions follow the same `rowActions()`
+  preset and `modify*ActionsUsing()` closures as the relation manager.
 
 ## m) Languages (0.2)
 

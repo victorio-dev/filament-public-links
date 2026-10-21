@@ -173,6 +173,38 @@ timezone. When links change outside the relation manager it refreshes on its own
 links in your own code, dispatch `PublicLinksRelationManager::LINKS_CHANGED` from the Livewire
 component.
 
+### Appearance
+
+The links table follows Filament's usual look: labelled row actions. Change it on the plugin, or
+change any action of the package wherever it appears with Filament's `configureUsing()`:
+
+```php
+use Filament\Actions\Action;
+use Victorio\PublicLinks\Filament\Actions\RevokePublicLinkAction;
+use Victorio\PublicLinks\PublicLinksPlugin;
+
+$panel->plugins([
+    PublicLinksPlugin::make()
+        ->rowActions('icons')        // 'labels' (default), 'icons' (label as tooltip) or 'group' (one menu)
+        // Keyed by name; return them in your order, leave some out, change or add your own.
+        ->modifyRowActionsUsing(fn (array $actions): array => [
+            $actions['copyPublicLink'],
+            $actions['revokePublicLink'],
+            Action::make('resend')->icon('heroicon-o-paper-airplane')->action(/* … */),
+        ])
+        ->modifyHeaderActionsUsing(fn (array $actions): array => [$actions['issuePublicLink']->label('Share')])
+        ->modifyToolbarActionsUsing(fn (array $actions): array => $actions),   // bulk actions
+]);
+
+// In a service provider's boot(), for every table and page:
+RevokePublicLinkAction::configureUsing(fn (RevokePublicLinkAction $action) => $action->color('warning'));
+```
+
+The actions are public classes — `IssuePublicLinkAction`, `CopyPublicLinkAction`,
+`ViewAccessLogAction`, `RevokePublicLinkAction`, `RevokePublicLinksBulkAction` — so they also work
+in your own tables of links. Icons are heroicons; hidden actions stay hidden, and refused, in
+every layout.
+
 ## Customization
 
 Start at the top of this list and stop at the first step that does the job.

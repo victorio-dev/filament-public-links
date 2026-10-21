@@ -16,7 +16,8 @@ use Victorio\PublicLinks\Support\PackageView;
  * "Copy link" on a link row: decrypts the token only when clicked, server side, and shows the URL
  * with a copy button. Nothing of the token is rendered into the table. Requires `update`.
  *
- * @internal
+ * Public API (row action of a PublicLink table): `make()`, Filament's modifiers and
+ * `configureUsing()` work as on any action.
  */
 final class CopyPublicLinkAction extends Action
 {

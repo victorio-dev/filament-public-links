@@ -23,8 +23,11 @@ Links speak your customer's language, and other packages can build on them.
   model than the record (`->issueUsing()`, `->linkOwnedUsing()`), show only some form fields
   (`->fields([...])`) and use your own headings (`->modalHeading()`, `->urlModalHeading()`). It is
   no longer final: extend it to ship a pre-configured variant as your own action class.
-- **Copy link and Access log** (`CopyPublicLinkAction`, `ViewAccessLogAction`) are public API, for
-  your own tables of links.
+- **Shape the links table.** `PublicLinksPlugin::rowActions('labels'|'icons'|'group')` picks how
+  the row actions look (labels stay the default), and `modifyRowActionsUsing()`,
+  `modifyHeaderActionsUsing()` and `modifyToolbarActionsUsing()` reorder, leave out, change or add
+  actions. Every action of the package is a public class — copy link, access log, revoke, revoke
+  selected — for your own tables of links and Filament's `configureUsing()`.
 - **Match your records with the access log.** `IpHasher::forRequest($request)` gives the same
   IP hash the access log stores, and a handler receives the request's access row as
   `$visit->access`.

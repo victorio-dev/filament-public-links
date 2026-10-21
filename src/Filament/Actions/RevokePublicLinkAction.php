@@ -15,7 +15,8 @@ use Victorio\PublicLinks\Models\PublicLink;
 /**
  * Revokes one link after confirmation. Requires `update` on the owner record.
  *
- * @internal
+ * Public API (row action of a PublicLink table): `make()`, Filament's modifiers and
+ * `configureUsing()` work as on any action.
  */
 final class RevokePublicLinkAction extends Action
 {
