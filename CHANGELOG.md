@@ -32,6 +32,9 @@ marked `@internal`.
 
 ### Changed
 
+- Requires `victorio/support` `^0.3`. The internal `Relations\StringKeyedMorphMany` and
+  `Support\ModelKey` are gone; the package uses `Victorio\Support\Database\*` instead (they
+  were `@internal`, so this is not a breaking change).
 - The access row of a POST action is written **before** the handler runs (it was written after).
   It therefore exists even when the handler throws, and the handler gets it as `$visit->access`.
 

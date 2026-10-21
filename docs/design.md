@@ -223,7 +223,7 @@ link only when the action succeeds (decided, k2).
 | `Concerns\HasPublicLinks`, `Builders\PendingPublicLink` | `Http\Controllers\PublicLinkController` |
 | `Models\PublicLink`, `Models\PublicLinkAccess` (swappable, so **not final**, D3) | `Http\Middleware\*` |
 | `Facades\PublicLinks`, `PublicLinkRegistry` | `Support\LinkResolver`, `Support\AccessRecorder` |
-| `Contracts\PublicLinkHandler`, `Contracts\HandlesPublicLinkActions`, `Contracts\BrandingResolver` | `Relations\StringKeyedMorphMany` |
+| `Contracts\PublicLinkHandler`, `Contracts\HandlesPublicLinkActions`, `Contracts\BrandingResolver` | — (`StringKeyedMorphMany` and `ModelKey` live in victorio/support from 0.2) |
 | `Data\IssuedPublicLink`, `Data\PublicLinkVisit`, `Data\Branding`, `Enums\PublicLinkStatus` | `Branding\ConfigBrandingResolver` (the default; the contract is public) |
 | `Events\*`, `Exceptions\*` | |
 | `Filament\RelationManagers\PublicLinksRelationManager`, `Filament\Actions\IssuePublicLinkAction` | |

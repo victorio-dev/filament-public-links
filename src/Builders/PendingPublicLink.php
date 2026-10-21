@@ -16,10 +16,10 @@ use Victorio\PublicLinks\Exceptions\InvalidPublicLink;
 use Victorio\PublicLinks\Exceptions\PermanentLinksDisabled;
 use Victorio\PublicLinks\Exceptions\UnknownPurpose;
 use Victorio\PublicLinks\PublicLinkRegistry;
-use Victorio\PublicLinks\Support\ModelKey;
 use Victorio\PublicLinks\Support\PublicLinksConfig;
 use Victorio\PublicLinks\Support\PublicLinkUrl;
 use Victorio\PublicLinks\Support\TokenFactory;
+use Victorio\Support\Database\ModelKey;
 
 /**
  * Fluent builder returned by HasPublicLinks::publicLink(). Nothing is written until issue().

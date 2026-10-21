@@ -17,9 +17,9 @@ use Illuminate\Support\Facades\Crypt;
 use Victorio\PublicLinks\Enums\PublicLinkStatus;
 use Victorio\PublicLinks\Events\PublicLinkExhausted;
 use Victorio\PublicLinks\Events\PublicLinkRevoked;
-use Victorio\PublicLinks\Support\ModelKey;
 use Victorio\PublicLinks\Support\PublicLinksConfig;
 use Victorio\PublicLinks\Support\PublicLinkUrl;
+use Victorio\Support\Database\ModelKey;
 
 /**
  * A public link to one model, for one purpose.

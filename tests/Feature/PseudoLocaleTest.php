@@ -13,7 +13,7 @@ use Victorio\PublicLinks\Filament\RelationManagers\PublicLinksRelationManager;
 use Victorio\PublicLinks\Tests\Fixtures\Filament\Pages\EditIntRecord;
 use Victorio\PublicLinks\Tests\Fixtures\IntRecord;
 use Victorio\PublicLinks\Tests\Fixtures\User;
-use Victorio\PublicLinks\Tests\Support\PseudoLocale;
+use Victorio\Support\Testing\PseudoLocale;
 
 /**
  * Every visible text of the package's pages comes from a translation key: with the pseudo

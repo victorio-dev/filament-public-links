@@ -7,8 +7,8 @@ namespace Victorio\PublicLinks\Concerns;
 use Illuminate\Database\Eloquent\Model;
 use Victorio\PublicLinks\Builders\PendingPublicLink;
 use Victorio\PublicLinks\Models\PublicLink;
-use Victorio\PublicLinks\Relations\StringKeyedMorphMany;
 use Victorio\PublicLinks\Support\PublicLinksConfig;
+use Victorio\Support\Database\StringKeyedMorphMany;
 
 /**
  * Gives any Eloquent model public links, whatever its key type (int, ULID or UUID).

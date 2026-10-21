@@ -24,8 +24,8 @@ use Victorio\PublicLinks\Filament\Support\DisplayDate;
 use Victorio\PublicLinks\Filament\Support\IssueLinkForm;
 use Victorio\PublicLinks\Filament\Support\PurposeLabel;
 use Victorio\PublicLinks\Models\PublicLink;
-use Victorio\PublicLinks\Support\ModelKey;
 use Victorio\PublicLinks\Support\PublicLinksConfig;
+use Victorio\Support\Database\ModelKey;
 
 /**
  * The public links of a record, for any resource whose model uses HasPublicLinks:
