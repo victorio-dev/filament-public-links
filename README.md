@@ -33,6 +33,8 @@ composer require victorio/filament-public-links
 php artisan filament-public-links:install   # publishes config and migrations, offers to migrate
 ```
 
+Non-interactive runs (`-n`, CI, deploys) do not migrate: run `php artisan migrate` afterwards.
+
 Access log rows are pruned by Laravel, so schedule `model:prune` (retention: 90 days by default):
 
 ```php
@@ -45,45 +47,79 @@ Schedule::command('model:prune', ['--model' => [PublicLinkAccess::class]])->dail
 
 ## Quick start
 
+**1. The model:**
+
 ```php
+// app/Models/Document.php
+namespace App\Models;
+
 use Illuminate\Database\Eloquent\Model;
 use Victorio\PublicLinks\Concerns\HasPublicLinks;
-use Victorio\PublicLinks\Facades\PublicLinks;
 
-// 1. The model
-class Quote extends Model
+class Document extends Model
 {
     use HasPublicLinks;
 }
+```
 
-// 2. What the link shows — in a service provider's boot()
-PublicLinks::handle(Quote::class, 'view', ShowQuote::class);
+**2. What the link shows**, registered in a service provider's `boot()`:
 
-// 3. Issue a link and send it
-$url = $quote->publicLink('view')->expiresIn(days: 14)->maxUses(5)->issue()->url;
+```php
+use App\Models\Document;
+use App\PublicLinks\ShowDocument;
+use Victorio\PublicLinks\Facades\PublicLinks;
+
+PublicLinks::handle(Document::class, 'view', ShowDocument::class);
+```
+
+**3. Issue a link** and send it:
+
+```php
+use App\Models\Document;
+
+$document = Document::findOrFail($id);
+$url = $document->publicLink('view')->expiresIn(days: 14)->maxUses(5)->issue()->url;
 ```
 
 A handler renders the page; the package has already checked the token, expiry, revocation and
 usage limit, written the access row and loaded the model:
 
 ```php
+// app/PublicLinks/ShowDocument.php
+namespace App\PublicLinks;
+
 use Symfony\Component\HttpFoundation\Response;
 use Victorio\PublicLinks\Data\PublicLinkVisit;
 use Victorio\PublicLinks\Handlers\PublicLinkHandlerBase;
 
-final class ShowQuote extends PublicLinkHandlerBase
+final class ShowDocument extends PublicLinkHandlerBase
 {
     public function show(PublicLinkVisit $visit): Response
     {
-        return response()->view('quotes.public', ['quote' => $visit->linkable, 'link' => $visit->link]);
+        return response()->view('documents.public', ['document' => $visit->linkable, 'link' => $visit->link]);
     }
 }
 ```
 
-In that view, `<x-filament-public-links::layout>` gives you the branded page (slots: `title`,
-content, `footer`). Handlers that accept actions (`POST /p/{token}/{action}`, CSRF-protected)
-implement `HandlesPublicLinkActions`; a handler decides whether an open or only a successful action
-counts as a use.
+Its view uses the branded layout — pass the link, so the page gets its brand and language:
+
+```blade
+{{-- resources/views/documents/public.blade.php --}}
+<x-filament-public-links::layout :link="$link" :page-title="$document->title">
+    <x-slot:title>{{ $document->title }}</x-slot:title>
+
+    <p>{{ $document->body }}</p>
+
+    <x-slot:footer>Questions? Reply to the e-mail this link came in.</x-slot:footer>
+</x-filament-public-links::layout>
+```
+
+`page-title` goes into the browser tab (with your brand name), the `title` slot is the page
+heading, the content is yours (escape with `{{ }}`), and `footer` adds an optional line.
+
+Handlers that accept actions (`POST /p/{token}/{action}`, CSRF-protected) implement
+`HandlesPublicLinkActions`; a handler decides whether an open or only a successful action counts
+as a use.
 
 <table>
   <tr>
@@ -160,13 +196,13 @@ $panel->plugins([
     PublicLinksPlugin::make()
         ->expiryOptions([1, 7, 30])                 // days offered in the form
         ->defaultExpiry(7)
-        ->purposeLabels(['view' => 'View quote'])   // wins over every other purpose label
+        ->purposeLabels(['view' => 'View document'])   // wins over every other purpose label
         ->dateTimeFormat('d/m/Y H:i'),              // every time in the table, log and modal
 ]);
 ```
 
 Purposes get readable labels on their own: the label given at registration
-(`PublicLinks::handle(Quote::class, 'accept', AcceptQuote::class, 'Accept the quote')`, plain text
+(`PublicLinks::handle(Document::class, 'accept', AcceptDocument::class, 'Accept the document')`, plain text
 or a translation key), else the package's translation for `view`, `accept` and `download`, else the
 name itself ("sign-contract" becomes "Sign contract"). Times are shown in Filament's display
 timezone. When links change outside the relation manager it refreshes on its own; after changing
@@ -269,7 +305,7 @@ visitor's browser language (among `locales.supported`), otherwise in the app loc
 has no link and starts at the browser. The handler runs with that locale already set.
 
 ```php
-$quote->publicLink('view')->locale($quote->locale)->issue();   // e.g. 'de'
+$document->publicLink('view')->locale($document->locale)->issue();   // e.g. 'de'
 ```
 
 The Filament form offers a language, proposing the record's own when the model says it, else the
