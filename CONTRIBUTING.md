@@ -28,7 +28,7 @@ make check-db PKG=filament-public-links   # the suite on SQLite, MySQL and Postg
 - Add tests for new behaviour and for the failure cases.
 - Keep Laravel 12 + Filament 4 and Laravel 13 + Filament 5 working; CI runs both.
 - Add a line to `CHANGELOG.md` under "Unreleased".
-- Every user-facing string needs an English and a Hungarian translation.
+- Every user-facing string needs a translation in all eight languages (see "Translations" below).
 - Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages.
 
 ## Translations
