@@ -15,6 +15,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Facades\FilamentTimezone;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
+use Locale;
 use Victorio\PublicLinks\Data\IssuedPublicLink;
 use Victorio\PublicLinks\PublicLinkRegistry;
 use Victorio\PublicLinks\PublicLinksPlugin;
@@ -87,6 +88,13 @@ final class IssueLinkForm
                 ->integer()
                 ->minValue(1)
                 ->nullable(),
+            Select::make('locale')
+                ->label(self::label('form.locale'))
+                ->helperText(self::label('form.locale_help'))
+                ->options(self::localeOptions())
+                ->default(self::defaultLocale($owner))
+                ->placeholder(self::label('form.locale_automatic'))
+                ->nullable(),
             TextInput::make('label')
                 ->label(self::label('form.label'))
                 ->helperText(self::label('form.label_help'))
@@ -130,8 +138,10 @@ final class IssueLinkForm
 
         $maxUses = $data['max_uses'] ?? null;
         $label = $data['label'] ?? null;
+        $locale = $data['locale'] ?? null;
 
         return $pending
+            ->locale(is_string($locale) && in_array($locale, PublicLinksConfig::supportedLocales(), true) ? $locale : null)
             ->maxUses(is_numeric($maxUses) ? (int) $maxUses : null)
             ->label(is_string($label) && trim($label) !== '' ? trim($label) : null)
             ->createdBy(self::user())
@@ -157,6 +167,35 @@ final class IssueLinkForm
         $options[self::CUSTOM_EXPIRY] = self::label('form.expiry_custom');
 
         return $options;
+    }
+
+    /**
+     * The supported locales, each named in its own language ("Deutsch", "Magyar") by intl.
+     *
+     * @return array<string, string>
+     */
+    private static function localeOptions(): array
+    {
+        $options = [];
+
+        foreach (PublicLinksConfig::supportedLocales() as $locale) {
+            $name = class_exists(Locale::class) ? Locale::getDisplayName($locale, $locale) : false;
+            $name = is_string($name) && $name !== '' ? $name : $locale;
+            $options[$locale] = mb_convert_case(mb_substr($name, 0, 1), MB_CASE_TITLE).mb_substr($name, 1);
+        }
+
+        return $options;
+    }
+
+    /**
+     * The record's own language when the model provides one, else the app's, if supported.
+     */
+    private static function defaultLocale(Model $owner): ?string
+    {
+        $locale = method_exists($owner, 'publicLinkLocale') ? $owner->publicLinkLocale() : null;
+        $locale = is_string($locale) && $locale !== '' ? $locale : app()->getLocale();
+
+        return in_array($locale, PublicLinksConfig::supportedLocales(), true) ? $locale : null;
     }
 
     private static function appTimezone(): string

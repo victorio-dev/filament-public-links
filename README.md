@@ -189,8 +189,11 @@ Start at the top of this list and stop at the first step that does the job.
 
    Admin-side times use the package's translated format (en `M j, Y H:i`, hu `Y. M j. H:i`);
    `PublicLinksPlugin::make()->dateTimeFormat('d/m/Y H:i')` sets your own for all of them.
-2. **Translations** — every user-facing string, in English and Hungarian:
-   `php artisan vendor:publish --tag="filament-public-links-translations"`.
+2. **Translations** — every user-facing string, in English, Hungarian, German, Spanish, French,
+   Italian, Dutch and Brazilian Portuguese:
+   `php artisan vendor:publish --tag="filament-public-links-translations"`. English and
+   Hungarian are checked by hand; the other six are machine-assisted — corrections are very
+   welcome (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 3. **Swappable classes** — brand per tenant with a resolver bound in `branding.resolver`; it
    receives the link (null on the 404 page) and returns a `Branding` (example below). The models
    are swappable too (`models.link`, `models.access`).
@@ -222,6 +225,29 @@ final class TenantBranding implements BrandingResolver
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/victorio-dev/filament-public-links/main/docs/images/gone-410-dark.jpg">
   <img alt="A revoked link: the branded 410 page with the contact address" src="https://raw.githubusercontent.com/victorio-dev/filament-public-links/main/docs/images/gone-410.jpg">
 </picture>
+
+## Languages
+
+A link's public pages are shown in the link's own language when you set one, otherwise in the
+visitor's browser language (among `locales.supported`), otherwise in the app locale. The 404 page
+has no link and starts at the browser. The handler runs with that locale already set.
+
+```php
+$quote->publicLink('view')->locale($quote->locale)->issue();   // e.g. 'de'
+```
+
+The Filament form offers a language, proposing the record's own when the model says it, else the
+app's:
+
+```php
+public function publicLinkLocale(): ?string
+{
+    return $this->locale;   // on a model using HasPublicLinks
+}
+```
+
+`locales.accept_language = false` ignores the browser. Right-to-left languages (`locales.rtl`:
+Arabic, Hebrew, Persian, Urdu, …) get `dir="rtl"`, and the layout uses logical CSS properties.
 
 ## Events
 

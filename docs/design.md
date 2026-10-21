@@ -37,6 +37,7 @@ provider and published with `--tag=filament-public-links-migrations`.
 | `linkable_type` | `string(255)` | Morph class (respects the host's morph map). |
 | `linkable_id` | `string(36)` | **Always a string** — see the decision below. |
 | `purpose` | `string(64)` | e.g. `view`, `accept`; matches a registered handler. |
+| `locale` | `string(16)`, nullable | From 0.2 (own migration, A4): the language of the link's pages; null = browser, then app. |
 | `tenant_id` (`tenancy.column`) | `string(36)`, nullable | Set from `Filament::getTenant()` at issue time when tenancy is active. |
 | `token_hash` | `char(64)` | `hash('sha256', $token)`, hex. **Unique.** |
 | `token_encrypted` | `text` | `Crypt::encryptString($token)`; never logged, never serialised (`$hidden`). |
@@ -591,3 +592,15 @@ models, off by default and switched on with a plugin option (e.g. `->linksOvervi
   one exists); copy, revoke, access log per row, bulk revoke.
 - Same Filament-compatibility rules (C1) and the internals list in section f applies.
 
+## m) Languages (0.2)
+
+Eight languages ship: en (source), hu (both checked by hand), de, es, fr, it, nl, pt_BR
+(machine-assisted). A page's language, set in `ResolvePublicLink` before anything renders (so the
+410 page and the handler get it): the link's `locale` → the browser's `Accept-Language` among
+`locales.supported` (exact tag, then the language alone: `de-AT` → `de`, `pt` → `pt_BR`; the
+browser's default is never forced) → the app locale. The 404 page skips the first step;
+`locales.accept_language = false` skips the second. `<html lang dir>`: `dir="rtl"` for
+`locales.rtl`. The Filament form has an optional language select (names from intl, in their own
+language), defaulting to `HasPublicLinks::publicLinkLocale()` or the app locale. Tests:
+`TranslationsTest` (keys, no empty value, same placeholders), `LocaleTest`, `PseudoLocaleTest`
+(no hard-coded text on the public pages and in the Filament UI).

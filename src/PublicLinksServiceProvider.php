@@ -41,7 +41,7 @@ final class PublicLinksServiceProvider extends PackageServiceProvider
             ->hasViews()
             // Every migration explicitly, by its stub filename without the extension. Never edit a
             // migration that is part of a tagged release — add a new one (rule A4).
-            ->hasMigrations(['create_public_links_table', 'create_public_link_accesses_table'])
+            ->hasMigrations(['create_public_links_table', 'create_public_link_accesses_table', 'add_locale_to_public_links_table'])
             ->hasInstallCommand(function (InstallCommand $command): void {
                 // php artisan filament-public-links:install (rule D11)
                 $command

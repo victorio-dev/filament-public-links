@@ -30,3 +30,10 @@ make check-db PKG=filament-public-links   # the suite on SQLite, MySQL and Postg
 - Add a line to `CHANGELOG.md` under "Unreleased".
 - Every user-facing string needs an English and a Hungarian translation.
 - Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages.
+
+## Translations
+
+English and Hungarian are checked by hand; German, Spanish, French, Italian, Dutch and Brazilian
+Portuguese are machine-assisted. A pull request that improves a translation in
+`resources/lang/<locale>/filament-public-links.php` is very welcome — keep every key and every
+`:placeholder` (the test suite checks both).

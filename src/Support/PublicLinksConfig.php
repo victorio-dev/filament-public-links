@@ -105,6 +105,38 @@ final class PublicLinksConfig
         ];
     }
 
+    /**
+     * @return list<string>
+     */
+    public static function supportedLocales(): array
+    {
+        return self::stringList('locales.supported', ['en', 'hu', 'de', 'es', 'fr', 'it', 'nl', 'pt_BR']);
+    }
+
+    public static function useAcceptLanguage(): bool
+    {
+        return (bool) config(self::KEY.'.locales.accept_language', true);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function rtlLocales(): array
+    {
+        return self::stringList('locales.rtl', ['ar', 'dv', 'fa', 'he', 'ku', 'ps', 'ur', 'yi']);
+    }
+
+    /**
+     * @param  list<string>  $default
+     * @return list<string>
+     */
+    private static function stringList(string $key, array $default): array
+    {
+        $value = config(self::KEY.'.'.$key, $default);
+
+        return is_array($value) ? array_values(array_filter($value, is_string(...))) : $default;
+    }
+
     public static function userAgentMaxLength(): int
     {
         return max(1, self::int('access_log.user_agent_max_length', 255));

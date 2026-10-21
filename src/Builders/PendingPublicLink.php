@@ -30,6 +30,9 @@ final class PendingPublicLink
 {
     private const string PURPOSE_PATTERN = '/^[a-z0-9][a-z0-9._-]{0,63}$/';
 
+    // A language tag as Laravel uses them: "en", "pt_BR", "zh-Hant"; at most 16 characters.
+    private const string LOCALE_PATTERN = '/^[A-Za-z]{2,3}([_-][A-Za-z0-9]{2,8}){0,2}$/';
+
     private ?DateTimeInterface $expiresAt = null;
 
     private bool $permanent = false;
@@ -37,6 +40,8 @@ final class PendingPublicLink
     private ?int $maxUses;
 
     private ?string $label = null;
+
+    private ?string $locale = null;
 
     /**
      * @var array<string, mixed>|null
@@ -86,6 +91,17 @@ final class PendingPublicLink
         return $this;
     }
 
+    /**
+     * The language of the link's public pages (e.g. the quote's language). Null: the browser's
+     * Accept-Language among the supported locales, then the app locale.
+     */
+    public function locale(?string $locale): self
+    {
+        $this->locale = $locale === null || trim($locale) === '' ? null : trim($locale);
+
+        return $this;
+    }
+
     public function label(?string $label): self
     {
         $this->label = $label;
@@ -125,6 +141,7 @@ final class PendingPublicLink
         $model = PublicLinksConfig::linkModel();
         $link = new $model([
             'purpose' => $this->purpose,
+            'locale' => $this->locale,
             'token_hash' => TokenFactory::hash($token),
             'token_encrypted' => Crypt::encryptString($token),
             'label' => $this->label,
@@ -169,6 +186,10 @@ final class PendingPublicLink
 
         if (! app(PublicLinkRegistry::class)->has($morphClass, $this->purpose)) {
             throw UnknownPurpose::for($morphClass, $this->purpose);
+        }
+
+        if ($this->locale !== null && preg_match(self::LOCALE_PATTERN, $this->locale) !== 1) {
+            throw InvalidPublicLink::locale($this->locale);
         }
 
         if ($this->maxUses !== null && $this->maxUses < 1) {

@@ -162,6 +162,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Languages of the public pages
+    |--------------------------------------------------------------------------
+    */
+
+    'locales' => [
+        /*
+        | The languages the public pages can be shown in (the package ships these
+        | eight). A page uses the link's own locale (->locale() when issuing), then
+        | the browser's Accept-Language among these, then the app locale; the 404
+        | page skips the first step. Set accept_language to false to ignore the
+        | browser. rtl lists the right-to-left languages (dir="rtl" on the page).
+        */
+        'supported' => ['en', 'hu', 'de', 'es', 'fr', 'it', 'nl', 'pt_BR'],
+        'accept_language' => true,
+        'rtl' => ['ar', 'dv', 'fa', 'he', 'ku', 'ps', 'ur', 'yi'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Response headers
     |--------------------------------------------------------------------------
     |

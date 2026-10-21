@@ -16,6 +16,19 @@ marked `@internal`.
   return the same HMAC the access log stores, so other packages can record a matching IP hash.
   The algorithm and key derivation are now part of the contract.
 - `PublicLinkVisit::$access`: handlers receive the access row written for the current request.
+- Six more languages: German, Spanish, French, Italian, Dutch and Brazilian Portuguese (machine
+  assisted; English and Hungarian are checked by hand). Corrections are welcome.
+- `->locale('de')` when issuing a link: its public pages (and the handler) use that language.
+  Without it, the visitor's browser language among `locales.supported` decides, then the app
+  locale; `locales.accept_language = false` ignores the browser. The 404 page follows the
+  browser, then the app. The Filament form offers a language, proposing the record's
+  (`publicLinkLocale()` on the model) or the app's.
+- Right-to-left languages (`locales.rtl`) get `dir="rtl"` on the public pages.
+
+### Upgrading
+
+- A new migration adds the nullable `locale` column to the links table:
+  `php artisan vendor:publish --tag="filament-public-links-migrations"`, then `php artisan migrate`.
 
 ### Changed
 

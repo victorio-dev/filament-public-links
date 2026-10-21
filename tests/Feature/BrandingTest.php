@@ -107,12 +107,14 @@ it('refuses a resolver class that does not implement the contract', function ():
 });
 
 it('renders the 404 and 410 pages in the layout, in English and Hungarian', function (string $locale, string $notFound, string $revoked): void {
+    // The app locale decides only without the browser's language (Symfony's test requests send one).
+    config()->set('filament-public-links.locales.accept_language', false);
     app()->setLocale($locale);
     $token = revokedLinkToken();
 
     get('/p/'.str_repeat('A', 43))
         ->assertNotFound()
-        ->assertSee('<html lang="'.$locale.'">', escape: false)
+        ->assertSee('<html lang="'.$locale.'" dir="ltr">', escape: false)
         ->assertSee('<header class="fpl-header">', escape: false)
         ->assertSee('<main class="fpl-main" id="content">', escape: false)
         ->assertSee('<h1>'.$notFound.'</h1>', escape: false);
@@ -135,6 +137,8 @@ it('shows the "Powered by" line only when it is switched on', function (): void 
 });
 
 it('offers the contact address on 410 only, and only when it is set', function (): void {
+    config()->set('filament-public-links.locales.accept_language', false);
+
     get('/p/'.revokedLinkToken())->assertDontSee('mailto:', escape: false);
 
     config()->set('filament-public-links.branding.contact_email', 'links@acme.test');

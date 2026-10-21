@@ -30,8 +30,9 @@ Out of scope: rendering any domain content, notifications (events only), sending
 
 Everything listed here follows semver; everything else in `src/` is `@internal`.
 
-- `Concerns\HasPublicLinks` on any model: `publicLink($purpose)->expiresIn()->maxUses()->issue()`
-  returns `Data\IssuedPublicLink` (`url`, `token`, `link`); `publicLinks()`, `revokePublicLinks()`.
+- `Concerns\HasPublicLinks` on any model: `publicLink($purpose)->expiresIn()->maxUses()->locale()->issue()`
+  returns `Data\IssuedPublicLink` (`url`, `token`, `link`); `publicLinks()`, `revokePublicLinks()`,
+  overridable `publicLinkLocale()`. Pages: link locale → Accept-Language → app (design.md m).
 - `Models\PublicLink`: `status()`, `isUsable()`, `revoke()`, `recordUse()` (atomic), `url()`.
 - `Facades\PublicLinks::handle(Model::class, 'purpose', Handler::class)` in a consumer's `boot()`;
   handlers implement `Contracts\PublicLinkHandler` (+ `HandlesPublicLinkActions`) and receive a

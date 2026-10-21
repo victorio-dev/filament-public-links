@@ -31,6 +31,7 @@ use Victorio\PublicLinks\Support\PublicLinkUrl;
  * @property string $linkable_type
  * @property string $linkable_id
  * @property string $purpose
+ * @property string|null $locale
  * @property string $token_hash
  * @property string $token_encrypted
  * @property string|null $label
@@ -63,6 +64,7 @@ class PublicLink extends Model
      */
     protected $fillable = [
         'purpose',
+        'locale',
         'token_hash',
         'token_encrypted',
         'label',

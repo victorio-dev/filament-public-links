@@ -18,4 +18,14 @@ final class IntRecord extends Model
     protected $table = 'fixture_int_records';
 
     protected $guarded = [];
+
+    /**
+     * The record language the Filament form proposes; tests set it, TestCase resets it.
+     */
+    public static ?string $preferredLocale = null;
+
+    public function publicLinkLocale(): ?string
+    {
+        return self::$preferredLocale;
+    }
 }

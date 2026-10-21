@@ -14,6 +14,7 @@ use Victorio\PublicLinks\Http\PublicLinkResponses;
 use Victorio\PublicLinks\Support\AccessRecorder;
 use Victorio\PublicLinks\Support\LinkResolver;
 use Victorio\PublicLinks\Support\PublicLinksConfig;
+use Victorio\PublicLinks\Support\PublicLocale;
 
 /**
  * Resolves the token to a link, or answers 404. A miss also counts against the stricter
@@ -48,10 +49,13 @@ final class ResolvePublicLink
 
             RateLimiter::hit($key, $limit['decay_seconds']);
             $this->recorder->record(null, AccessOutcome::NotFound, $request);
+            PublicLocale::apply(null, $request);
 
             return PublicLinkResponses::status(AccessOutcome::NotFound, 404);
         }
 
+        // Before anything renders: the 410 pages and the handler use the link's language.
+        PublicLocale::apply($link, $request);
         $request->attributes->set(self::ATTRIBUTE, $link);
 
         return $next($request);

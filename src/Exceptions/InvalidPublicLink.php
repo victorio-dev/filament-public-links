@@ -30,6 +30,11 @@ final class InvalidPublicLink extends PublicLinkException
         return new self(sprintf('A public link usage limit must be at least 1, %d given.', $maxUses));
     }
 
+    public static function locale(string $locale): self
+    {
+        return new self(sprintf('Invalid public link locale "%s": use a language tag such as "en", "hu" or "pt_BR".', $locale));
+    }
+
     public static function unsavedModel(): self
     {
         return new self('A public link can only be issued for a model that has been saved.');

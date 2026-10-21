@@ -42,6 +42,15 @@ trait HasPublicLinks
     }
 
     /**
+     * The language the Filament form proposes for this record's links (e.g. a quote's language).
+     * Override it in the model; null proposes the app locale.
+     */
+    public function publicLinkLocale(): ?string
+    {
+        return null;
+    }
+
+    /**
      * Starts a new link for the given purpose; nothing is written until ->issue().
      */
     public function publicLink(string $purpose): PendingPublicLink

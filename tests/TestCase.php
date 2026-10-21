@@ -24,6 +24,7 @@ abstract class TestCase extends Orchestra
         ShowRecord::$lastVisit = null;
         ShowRecord::$calls = 0;
         AcceptRecord::$calls = 0;
+        IntRecord::$preferredLocale = null;
         AcceptRecord::$lastVisit = null;
         AcceptRecord::$throw = false;
 
