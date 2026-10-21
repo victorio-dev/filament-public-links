@@ -7,6 +7,12 @@ marked `@internal`.
 
 ## [Unreleased]
 
+### Added
+
+- `CopyPublicLinkAction` and `ViewAccessLogAction` are public API: use them as row actions in
+  your own Filament tables of `PublicLink` records (for example links that belong to a related
+  model). Previously `@internal`; their behaviour is unchanged.
+
 ## [0.1.0] - 2026-10-20
 
 ### Added
