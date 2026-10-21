@@ -28,6 +28,8 @@ marked `@internal`.
   URL modal and permissions: `->issueUsing()` (gets the form data and a pre-configured
   `PendingPublicLink` factory), `->linkOwnedUsing()` (which links the URL modal may show) and
   `->fields([...])` (which form fields to show).
+- `IssuePublicLinkAction::modalHeading()` and `->urlModalHeading()` set the headings of the form
+  and of the URL step (a text or a translation key).
 
 ### Upgrading
 

@@ -537,6 +537,24 @@ describe('issuing for another model', function (): void {
         $page->assertMountedActionModalSee((string) $link->url());
     });
 
+    it('uses its own headings for the form and the URL step', function (): void {
+        $record = IntRecord::create(['name' => 'Quote']);
+
+        editPage($record)->mountAction('issueForCopy')->assertMountedActionModalSee('Share a copy');
+
+        editPage($record)->callAction('issueForCopy', data: ['expiry' => '7'])
+            ->assertMountedActionModalSee('Copy link')
+            ->assertMountedActionModalDontSee(['Share a copy', 'Public link']);
+    });
+
+    it('keeps the default headings without them', function (): void {
+        $record = IntRecord::create(['name' => 'Quote']);
+
+        editPage($record)->mountAction('issuePublicLink')->assertMountedActionModalSee('New public link');
+        editPage($record)->callAction('issuePublicLink', data: ['purpose' => 'view', 'expiry' => '7'])
+            ->assertMountedActionModalSee('Public link');
+    });
+
     it('shows only the chosen fields', function (): void {
         editPage(IntRecord::create(['name' => 'Quote']))
             ->mountAction('issueForCopy')

@@ -7,6 +7,7 @@ namespace Victorio\PublicLinks\Filament\Actions;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use UnexpectedValueException;
@@ -62,6 +63,37 @@ final class IssuePublicLinkAction extends Action
      */
     private ?Closure $linkOwnedUsing = null;
 
+    private string|Htmlable|null $formHeading = null;
+
+    private ?string $urlHeading = null;
+
+    /**
+     * The heading while the form is shown (default "New public link"): a text or a translation
+     * key. The heading of the URL step is urlModalHeading(). A closure is not supported here,
+     * because the action switches between the two headings itself.
+     *
+     * The parameter keeps Filament's signature.
+     *
+     * @param  string|Htmlable|(Closure(): mixed)|null  $heading
+     */
+    public function modalHeading(string|Htmlable|Closure|null $heading = null): static
+    {
+        $this->formHeading = $heading instanceof Closure ? null : $heading;
+
+        return $this;
+    }
+
+    /**
+     * The heading while the new link's URL is shown (default "Public link"): a text or a
+     * translation key.
+     */
+    public function urlModalHeading(?string $heading): static
+    {
+        $this->urlHeading = $heading;
+
+        return $this;
+    }
+
     /**
      * The form fields to show, from `purpose`, `expiry`, `max_uses`, `locale`, `label`; the rest
      * are left out (and their defaults apply). Default: all.
@@ -113,12 +145,15 @@ final class IssuePublicLinkAction extends Action
     {
         parent::setUp();
 
+        // Through the parent, so the form and URL headings set with modalHeading() and
+        // urlModalHeading() keep this two-state heading.
+        parent::modalHeading(fn (Action $action, mixed $livewire): string => self::shownLinkKey($action, $livewire) !== null
+            ? self::text($this->urlHeading) ?? IssueLinkForm::label('actions.url.heading')
+            : self::text($this->formHeading) ?? IssueLinkForm::label('actions.issue.heading'));
+
         $this
             ->label(IssueLinkForm::label('actions.issue.label'))
             ->icon('heroicon-o-link')
-            ->modalHeading(static fn (Action $action, mixed $livewire): string => IssueLinkForm::label(
-                self::shownLinkKey($action, $livewire) !== null ? 'actions.url.heading' : 'actions.issue.heading',
-            ))
             ->modalSubmitActionLabel(IssueLinkForm::label('actions.issue.submit'))
             // Filament passes the submit button as `$action` here; see design.md "Filament internals" #4.
             ->modalSubmitAction(fn (mixed $livewire): ?bool => self::shownLinkKey($this, $livewire) !== null
@@ -200,6 +235,24 @@ final class IssuePublicLinkAction extends Action
 
                 }
             });
+    }
+
+    /**
+     * A heading given as a translation key resolves to its translation; any other text stays.
+     */
+    private static function text(string|Htmlable|null $heading): ?string
+    {
+        if ($heading instanceof Htmlable) {
+            return $heading->toHtml();
+        }
+
+        if ($heading === null || $heading === '') {
+            return null;
+        }
+
+        $translated = __($heading);
+
+        return is_string($translated) ? $translated : $heading;
     }
 
     /**

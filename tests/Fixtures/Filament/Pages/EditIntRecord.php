@@ -23,6 +23,9 @@ final class EditIntRecord extends EditRecord
             IssuePublicLinkAction::make(),
             // A link to another model than the record: a ULID record made from it.
             IssuePublicLinkAction::make('issueForCopy')
+                ->modalHeading('Share a copy')
+                // A translation key resolves to its text.
+                ->urlModalHeading('filament-public-links::filament-public-links.filament.actions.copy.label')
                 ->fields(['expiry', 'locale'])
                 ->issueUsing(fn (Model $record, array $data, Closure $pending): IssuedPublicLink => $pending(
                     UlidRecord::create(['name' => 'Copy of '.$record->getAttribute('name')]),
