@@ -16,6 +16,7 @@ use Filament\Support\Facades\FilamentTimezone;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Locale;
+use Victorio\PublicLinks\Builders\PendingPublicLink;
 use Victorio\PublicLinks\Data\IssuedPublicLink;
 use Victorio\PublicLinks\PublicLinkRegistry;
 use Victorio\PublicLinks\PublicLinksPlugin;
@@ -32,9 +33,35 @@ final class IssueLinkForm
     public const string CUSTOM_EXPIRY = 'custom';
 
     /**
+     * The field groups of the form, as IssuePublicLinkAction::fields() names them.
+     */
+    public const array FIELDS = ['purpose', 'expiry', 'max_uses', 'locale', 'label'];
+
+    /**
+     * @param  list<string>|null  $fields  the groups to show (FIELDS); null = all
      * @return array<int, Component|\Filament\Forms\Components\Field>
      */
-    public static function schema(Model $owner): array
+    public static function schema(Model $owner, ?array $fields = null): array
+    {
+        $groups = [
+            'purpose' => ['purpose'],
+            'expiry' => ['permanent', 'expiry', 'expires_on'],
+            'max_uses' => ['max_uses'],
+            'locale' => ['locale'],
+            'label' => ['label'],
+        ];
+        $shown = array_merge(...array_values(array_intersect_key($groups, array_flip($fields ?? self::FIELDS))));
+
+        return array_values(array_filter(
+            self::allFields($owner),
+            static fn (Component|\Filament\Forms\Components\Field $field): bool => ! method_exists($field, 'getName') || in_array($field->getName(), $shown, true),
+        ));
+    }
+
+    /**
+     * @return array<int, Component|\Filament\Forms\Components\Field>
+     */
+    private static function allFields(Model $owner): array
     {
         $plugin = PublicLinksPlugin::current();
         $purposes = app(PublicLinkRegistry::class)->purposesFor($owner->getMorphClass());
@@ -115,7 +142,19 @@ final class IssueLinkForm
         }
 
         $purpose = is_string($data['purpose'] ?? null) ? $data['purpose'] : '';
-        $pending = $owner->publicLink($purpose);
+
+        return self::pending($owner, $purpose, $data)->issue();
+    }
+
+    /**
+     * A link to any model, configured from the submitted form data (expiry, usage limit,
+     * language, note) for the current user; nothing is written until ->issue().
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public static function pending(Model $linkable, string $purpose, array $data): PendingPublicLink
+    {
+        $pending = new PendingPublicLink($linkable, $purpose);
 
         if (($data['permanent'] ?? false) === true) {
             $pending->permanent();
@@ -144,8 +183,7 @@ final class IssueLinkForm
             ->locale(is_string($locale) && in_array($locale, PublicLinksConfig::supportedLocales(), true) ? $locale : null)
             ->maxUses(is_numeric($maxUses) ? (int) $maxUses : null)
             ->label(is_string($label) && trim($label) !== '' ? trim($label) : null)
-            ->createdBy(self::user())
-            ->issue();
+            ->createdBy(self::user());
     }
 
     /**

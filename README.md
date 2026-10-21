@@ -118,7 +118,9 @@ public static function getRelations(): array
 It lists the record's links, creates new ones (purpose, expiry, usage limit) and shows the URL
 once, copies an existing link's URL on demand, revokes one or several links, and shows each link's
 access log. Prefer a single button? `IssuePublicLinkAction::make()` works as a page action or a
-table row action, with the same form and URL modal.
+table row action, with the same form and URL modal. To link another model than the record (a
+copy, a sealed version), give it `->issueUsing()` and `->linkOwnedUsing()`; `->fields([...])`
+picks the form fields.
 
 <table>
   <tr>

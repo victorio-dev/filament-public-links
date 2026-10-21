@@ -512,3 +512,44 @@ it('escapes the link note', function (): void {
         ->mountTableAction('viewPublicLinkAccessLog', $link)
         ->assertMountedActionModalDontSee('<script>alert(1)</script>', escape: false);
 });
+
+describe('issuing for another model', function (): void {
+    function editPage(IntRecord $record): mixed
+    {
+        return Livewire::test(EditIntRecord::class, ['record' => $record->getKey()]);
+    }
+
+    it('issues through issueUsing() with the form\'s settings and shows the URL', function (): void {
+        Carbon::setTestNow('2026-10-20 12:00:00');
+        $quote = IntRecord::create(['name' => 'Quote']);
+
+        $page = editPage($quote)->callAction('issueForCopy', data: ['expiry' => '7', 'locale' => 'de'])->assertHasNoErrors();
+
+        $copy = UlidRecord::query()->where('name', 'Copy of Quote')->sole();
+        $link = $copy->publicLinks()->sole();
+
+        expect($quote->publicLinks()->count())->toBe(0)
+            ->and($link->locale)->toBe('de')
+            ->and($link->expires_at?->toDateTimeString())->toBe('2026-10-27 12:00:00')
+            ->and($link->max_uses)->toBeNull()
+            ->and($link->created_by_id)->toBe((string) auth()->id());
+
+        $page->assertMountedActionModalSee((string) $link->url());
+    });
+
+    it('shows only the chosen fields', function (): void {
+        editPage(IntRecord::create(['name' => 'Quote']))
+            ->mountAction('issueForCopy')
+            ->assertMountedActionModalSee(['Expires in', 'Language'])
+            ->assertMountedActionModalDontSee(['Purpose', 'Usage limit', 'Note']);
+    });
+
+    it('shows a URL only when linkOwnedUsing() accepts the link, even to a crafted request', function (): void {
+        $quote = IntRecord::create(['name' => 'Quote']);
+        $foreign = UlidRecord::create(['name' => 'Copy of Other'])->publicLink('view')->issue();
+
+        editPage($quote)
+            ->call('mountAction', 'issueForCopy', ['link' => $foreign->link->getKey()], ['filamentPublicLinksUrl' => true])
+            ->assertMountedActionModalDontSee($foreign->url);
+    });
+});

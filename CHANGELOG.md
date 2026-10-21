@@ -24,6 +24,10 @@ marked `@internal`.
   browser, then the app. The Filament form offers a language, proposing the record's
   (`publicLinkLocale()` on the model) or the app's.
 - Right-to-left languages (`locales.rtl`) get `dir="rtl"` on the public pages.
+- `IssuePublicLinkAction` can issue a link to another model than the record, with the same form,
+  URL modal and permissions: `->issueUsing()` (gets the form data and a pre-configured
+  `PendingPublicLink` factory), `->linkOwnedUsing()` (which links the URL modal may show) and
+  `->fields([...])` (which form fields to show).
 
 ### Upgrading
 

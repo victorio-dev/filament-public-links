@@ -332,6 +332,14 @@ public static function getRelations(): array
 `IssuePublicLinkAction::make('view')` — the same "new link + copy" flow as a page or table action,
 for resources that do not want the full relation manager.
 
+From 0.2 it can issue for another model than the record (filament-acceptance's approval action
+links a sealed version): `->issueUsing(fn (Model $record, array $data, Closure $pending) => …)`,
+where `$pending($linkable, $purpose)` is a `PendingPublicLink` configured from the form;
+`->linkOwnedUsing(fn (Model $record, PublicLink $link): bool)` decides which link the URL modal
+may show (the mounted action's arguments come from the client); `->fields([...])` limits the
+form to `purpose`, `expiry`, `max_uses`, `locale`, `label`. Authorization stays `update` on the
+record.
+
 Authorization: viewing the relation manager follows the owner record's `view` policy; creating and
 revoking follow `update` (decided, k4).
 

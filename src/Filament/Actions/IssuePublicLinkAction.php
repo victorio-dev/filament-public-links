@@ -4,15 +4,21 @@ declare(strict_types=1);
 
 namespace Victorio\PublicLinks\Filament\Actions;
 
+use Closure;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
+use UnexpectedValueException;
+use Victorio\PublicLinks\Builders\PendingPublicLink;
+use Victorio\PublicLinks\Data\IssuedPublicLink;
 use Victorio\PublicLinks\Filament\RelationManagers\PublicLinksRelationManager;
 use Victorio\PublicLinks\Filament\Support\Authorizer;
 use Victorio\PublicLinks\Filament\Support\IssueLinkForm;
 use Victorio\PublicLinks\Filament\Support\OwnerRecord;
+use Victorio\PublicLinks\Models\PublicLink;
 use Victorio\PublicLinks\Support\PackageView;
+use Victorio\PublicLinks\Support\PublicLinksConfig;
 
 /**
  * "New public link" for any resource page or table, for those who do not want the relation
@@ -25,12 +31,78 @@ use Victorio\PublicLinks\Support\PackageView;
  *
  * It asks for purpose, expiry and usage limit, issues the link for the page's (or the row's)
  * record, then shows the URL once with a copy button. Requires `update` on that record.
+ *
+ * A link to another model than the record (e.g. a sealed version of it) — the form, the URL
+ * modal and the authorization stay the same:
+ *
+ *     IssuePublicLinkAction::make('sendForApproval')
+ *         ->fields(['expiry', 'locale'])
+ *         ->issueUsing(fn (Model $record, array $data, Closure $pending): IssuedPublicLink =>
+ *             $pending($record->seal(...), 'approval')->issue())
+ *         ->linkOwnedUsing(fn (Model $record, PublicLink $link): bool => …);
  */
 final class IssuePublicLinkAction extends Action
 {
     private const string LINK_ARGUMENT = 'link';
 
     private const string URL_CONTEXT_MARKER = 'filamentPublicLinksUrl';
+
+    /**
+     * @var list<string>|null
+     */
+    private ?array $fields = null;
+
+    /**
+     * @var (Closure(Model, array<string, mixed>, Closure(Model, string): PendingPublicLink): IssuedPublicLink)|null
+     */
+    private ?Closure $issueUsing = null;
+
+    /**
+     * @var (Closure(Model, PublicLink): bool)|null
+     */
+    private ?Closure $linkOwnedUsing = null;
+
+    /**
+     * The form fields to show, from `purpose`, `expiry`, `max_uses`, `locale`, `label`; the rest
+     * are left out (and their defaults apply). Default: all.
+     *
+     * @param  list<string>  $fields
+     */
+    public function fields(array $fields): static
+    {
+        $this->fields = array_values(array_intersect($fields, IssueLinkForm::FIELDS));
+
+        return $this;
+    }
+
+    /**
+     * Issues the link yourself, e.g. for another model than the record. The callback receives the
+     * record, the form data and `$pending(Model $linkable, string $purpose): PendingPublicLink`,
+     * already configured from the form (expiry, usage limit, language, note, issuer), and returns
+     * the issued link. Pair it with linkOwnedUsing(), so the URL modal can find the link.
+     *
+     * @param  Closure(Model, array<string, mixed>, Closure(Model, string): PendingPublicLink): IssuedPublicLink  $callback
+     */
+    public function issueUsing(Closure $callback): static
+    {
+        $this->issueUsing = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Whether a link belongs to the record, for links that are not the record's own (see
+     * issueUsing()). The URL modal shows a link only when this says yes: a mounted action's
+     * arguments come from the client.
+     *
+     * @param  Closure(Model, PublicLink): bool  $callback
+     */
+    public function linkOwnedUsing(Closure $callback): static
+    {
+        $this->linkOwnedUsing = $callback;
+
+        return $this;
+    }
 
     public static function getDefaultName(): string
     {
@@ -55,14 +127,14 @@ final class IssuePublicLinkAction extends Action
             ->modalCancelActionLabel(static fn (Action $action, mixed $livewire): ?string => self::shownLinkKey($action, $livewire) !== null
                 ? IssueLinkForm::label('actions.url.close')
                 : null)
-            ->schema(static function (Action $action, mixed $livewire, ?Model $record): array {
+            ->schema(function (Action $action, mixed $livewire, ?Model $record): array {
                 $owner = OwnerRecord::resolve($livewire, $record);
 
                 return self::shownLinkKey($action, $livewire) !== null || $owner === null
                     ? []
-                    : IssueLinkForm::schema($owner);
+                    : IssueLinkForm::schema($owner, $this->fields);
             })
-            ->modalContent(static function (Action $action, mixed $livewire, ?Model $record): ?View {
+            ->modalContent(function (Action $action, mixed $livewire, ?Model $record): ?View {
                 $key = self::shownLinkKey($action, $livewire);
 
                 if ($key === null) {
@@ -70,9 +142,8 @@ final class IssuePublicLinkAction extends Action
                 }
 
                 $owner = OwnerRecord::resolve($livewire, $record);
-                $link = $owner === null ? null : OwnerRecord::link($owner, $key);
 
-                return PackageView::make('filament.url', ['link' => $link]);
+                return PackageView::make('filament.url', ['link' => $owner === null ? null : $this->ownedLink($owner, $key)]);
             })
             ->visible(static fn (mixed $livewire, ?Model $record): bool => Authorizer::allows(
                 Authorizer::UPDATE,
@@ -93,7 +164,17 @@ final class IssuePublicLinkAction extends Action
                     return;
                 }
 
-                $issued = IssueLinkForm::issue($owner, $data);
+                $issued = $this->issueUsing === null
+                    ? IssueLinkForm::issue($owner, $data)
+                    : ($this->issueUsing)(
+                        $owner,
+                        $data,
+                        static fn (Model $linkable, string $purpose): PendingPublicLink => IssueLinkForm::pending($linkable, $purpose, $data),
+                    );
+
+                if (! $issued instanceof IssuedPublicLink) {
+                    throw new UnexpectedValueException('IssuePublicLinkAction::issueUsing() must return an IssuedPublicLink.');
+                }
 
                 if (is_object($livewire) && method_exists($livewire, 'dispatch')) {
                     $livewire->dispatch(PublicLinksRelationManager::LINKS_CHANGED);
@@ -119,6 +200,22 @@ final class IssuePublicLinkAction extends Action
 
                 }
             });
+    }
+
+    /**
+     * The link with that key when it belongs to the owner: one of its own links, or one the
+     * linkOwnedUsing() callback accepts.
+     */
+    private function ownedLink(Model $owner, string $key): ?PublicLink
+    {
+        if ($this->linkOwnedUsing === null) {
+            return OwnerRecord::link($owner, $key);
+        }
+
+        $model = PublicLinksConfig::linkModel();
+        $link = $model::query()->whereKey($key)->first();
+
+        return $link instanceof PublicLink && ($this->linkOwnedUsing)($owner, $link) === true ? $link : null;
     }
 
     /**
