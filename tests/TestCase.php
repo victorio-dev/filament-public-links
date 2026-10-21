@@ -24,6 +24,8 @@ abstract class TestCase extends Orchestra
         ShowRecord::$lastVisit = null;
         ShowRecord::$calls = 0;
         AcceptRecord::$calls = 0;
+        AcceptRecord::$lastVisit = null;
+        AcceptRecord::$throw = false;
 
         foreach ([IntRecord::class, UlidRecord::class, UuidRecord::class] as $model) {
             PublicLinks::handle($model, 'view', ShowRecord::class);

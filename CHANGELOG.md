@@ -12,6 +12,15 @@ marked `@internal`.
 - `CopyPublicLinkAction` and `ViewAccessLogAction` are public API: use them as row actions in
   your own Filament tables of `PublicLink` records (for example links that belong to a related
   model). Previously `@internal`; their behaviour is unchanged.
+- `Support\IpHasher` is public API: `IpHasher::hash($ip)` and `IpHasher::forRequest($request)`
+  return the same HMAC the access log stores, so other packages can record a matching IP hash.
+  The algorithm and key derivation are now part of the contract.
+- `PublicLinkVisit::$access`: handlers receive the access row written for the current request.
+
+### Changed
+
+- The access row of a POST action is written **before** the handler runs (it was written after).
+  It therefore exists even when the handler throws, and the handler gets it as `$visit->access`.
 
 ## [0.1.0] - 2026-10-20
 

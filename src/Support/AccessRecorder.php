@@ -31,7 +31,7 @@ final class AccessRecorder
             'public_link_id' => $link?->getKey(),
             'outcome' => $outcome->value,
             'action' => $action,
-            'ip_hash' => IpHasher::hash($request->ip()),
+            'ip_hash' => IpHasher::forRequest($request),
             'user_agent' => $userAgent === null || $userAgent === ''
                 ? null
                 : mb_substr($userAgent, 0, PublicLinksConfig::userAgentMaxLength()),

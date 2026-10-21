@@ -19,6 +19,7 @@ use Victorio\PublicLinks\Events\PublicLinkActionPerformed;
 use Victorio\PublicLinks\Events\PublicLinkFirstOpened;
 use Victorio\PublicLinks\Events\PublicLinkOpened;
 use Victorio\PublicLinks\Models\PublicLinkAccess;
+use Victorio\PublicLinks\Support\IpHasher;
 use Victorio\PublicLinks\Support\TokenComparer;
 use Victorio\PublicLinks\Tests\Fixtures\Handlers\AcceptRecord;
 use Victorio\PublicLinks\Tests\Fixtures\Handlers\ShowRecord;
@@ -169,6 +170,52 @@ it('lets the handler decide: an accept link spends its use on the action, not on
         PublicLinkActionPerformed::class,
         fn (PublicLinkActionPerformed $event): bool => $event->action === 'accept' && $event->link->is($issued->link),
     );
+});
+
+it('hands an action handler the access row written before it ran', function (): void {
+    $issued = IntRecord::create(['name' => 'Quote'])->publicLink('accept')->issue();
+
+    withServerVariables(['REMOTE_ADDR' => '203.0.113.9'])->post(publicUrl($issued->token, 'accept'))->assertOk();
+
+    $access = PublicLinkAccess::query()->sole();
+
+    expect(AcceptRecord::$lastVisit?->access?->is($access))->toBeTrue()
+        ->and($access->outcome)->toBe('action')
+        ->and($access->action)->toBe('accept');
+});
+
+it('keeps the access row of an action whose handler throws', function (): void {
+    AcceptRecord::$throw = true;
+    $issued = IntRecord::create(['name' => 'Quote'])->publicLink('accept')->issue();
+
+    post(publicUrl($issued->token, 'accept'))->assertServerError();
+
+    expect(outcomes())->toBe(['action']);
+});
+
+it('hands a show handler the access row of the open', function (): void {
+    $issued = IntRecord::create(['name' => 'Quote'])->publicLink('view')->issue();
+
+    get(publicUrl($issued->token))->assertOk();
+
+    expect(ShowRecord::$lastVisit?->access?->is(PublicLinkAccess::query()->sole()))->toBeTrue();
+});
+
+it('exposes the access log IP hash, byte for byte, for other packages', function (): void {
+    $issued = IntRecord::create(['name' => 'Quote'])->publicLink('view')->issue();
+    withServerVariables(['REMOTE_ADDR' => '203.0.113.9'])->get(publicUrl($issued->token))->assertOk();
+
+    $derivedKey = hash_hmac('sha256', 'filament-public-links:ip-hash', (string) config('app.key'));
+
+    expect(PublicLinkAccess::query()->sole()->ip_hash)
+        ->toBe(IpHasher::hash('203.0.113.9'))
+        ->toBe(hash_hmac('sha256', '203.0.113.9', $derivedKey))
+        ->and(ShowRecord::$lastVisit?->request === null ? null : IpHasher::forRequest(ShowRecord::$lastVisit->request))
+        ->toBe(IpHasher::hash('203.0.113.9'));
+
+    config()->set('filament-public-links.access_log.ip_hash_key', 'shared-key');
+
+    expect(IpHasher::hash('203.0.113.9'))->toBe(hash_hmac('sha256', '203.0.113.9', 'shared-key'));
 });
 
 it('never expires a permanent link', function (): void {

@@ -205,7 +205,8 @@ final class ShowQuote implements PublicLinkHandler
 ```
 
 `PublicLinkVisit` (final, readonly): `link` (the resolved `PublicLink`), `linkable` (the model,
-already loaded), `request`, `action` (null for GET). Handlers that accept actions also implement
+already loaded), `request`, `action` (null for GET), `access` (the access row of this request,
+from 0.2; for actions it is written before the handler runs). Handlers that accept actions also implement
 `HandlesPublicLinkActions::handleAction(string $action, PublicLinkVisit $visit): Response`; the
 handler decides whether an action consumes a use (`$visit->link->recordUse()`).
 
@@ -217,7 +218,7 @@ link only when the action succeeds (decided, k2).
 
 | Public (semver) | `@internal` |
 | --- | --- |
-| `PublicLinksPlugin`, `PublicLinksServiceProvider` | `Support\TokenFactory`, `Support\TokenHasher`, `Support\IpHasher` |
+| `PublicLinksPlugin`, `PublicLinksServiceProvider`, `Support\IpHasher` (from 0.2) | `Support\TokenFactory`, `Support\TokenHasher` |
 | `Concerns\HasPublicLinks`, `Builders\PendingPublicLink` | `Http\Controllers\PublicLinkController` |
 | `Models\PublicLink`, `Models\PublicLinkAccess` (swappable, so **not final**, D3) | `Http\Middleware\*` |
 | `Facades\PublicLinks`, `PublicLinkRegistry` | `Support\LinkResolver`, `Support\AccessRecorder` |

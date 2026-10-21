@@ -62,7 +62,7 @@ final class PublicLinkController
             event(new PublicLinkFirstOpened($link, $access));
         }
 
-        return $handler->show(new PublicLinkVisit($link, $linkable, $request));
+        return $handler->show(new PublicLinkVisit($link, $linkable, $request, access: $access));
     }
 
     public function action(Request $request, string $token, string $action): Response
@@ -82,8 +82,10 @@ final class PublicLinkController
             return PublicLinkResponses::status(AccessOutcome::NotFound, 404, $link);
         }
 
-        $response = $handler->handleAction($action, new PublicLinkVisit($link, $linkable, $request, $action));
+        // Written before the handler runs, so the row exists even if the handler throws, and the
+        // handler can refer to it through $visit->access.
         $access = $this->recorder->record($link, AccessOutcome::Action, $request, $action);
+        $response = $handler->handleAction($action, new PublicLinkVisit($link, $linkable, $request, $action, $access));
 
         if ($response->getStatusCode() < 400) {
             event(new PublicLinkActionPerformed($link, $action, $access));

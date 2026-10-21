@@ -251,6 +251,16 @@ notifications; "tell the sales rep when the customer first opens the quote" is o
 - **Rate limits** per IP, with a stricter one for unknown tokens.
 - Your web server's access log contains the public URLs — configure its retention accordingly.
 
+Records of your own that should match the access log (who accepted, from which request) can
+store the same IP hash: `IpHasher::forRequest($request)` returns exactly the `ip_hash` of that
+request's access row, and handlers receive the row itself as `$visit->access`.
+
+```php
+use Victorio\PublicLinks\Support\IpHasher;
+
+$hash = IpHasher::forRequest($request);   // HMAC-SHA256, the access log's key
+```
+
 Please report vulnerabilities privately, as described in [SECURITY.md](SECURITY.md).
 
 ## Testing
