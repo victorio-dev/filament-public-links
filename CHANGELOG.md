@@ -7,6 +7,8 @@ marked `@internal`.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-21
+
 Links speak your customer's language, and other packages can build on them.
 
 ### Added
