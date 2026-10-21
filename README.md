@@ -6,8 +6,8 @@ needed — with an access log, a branded public page and a Filament UI to manage
 [![Tests](https://img.shields.io/github/actions/workflow/status/victorio-dev/filament-public-links/tests.yml?branch=main&label=tests)](https://github.com/victorio-dev/filament-public-links/actions/workflows/tests.yml)
 [![Latest version](https://img.shields.io/packagist/v/victorio/filament-public-links)](https://packagist.org/packages/victorio/filament-public-links)
 [![Downloads](https://img.shields.io/packagist/dt/victorio/filament-public-links)](https://packagist.org/packages/victorio/filament-public-links)
-[![License](https://img.shields.io/packagist/l/victorio/filament-public-links)](LICENSE.md)
-[![PHP](https://img.shields.io/packagist/dependency-v/victorio/filament-public-links/php)](composer.json)
+[![License](https://img.shields.io/packagist/l/victorio/filament-public-links)](https://github.com/victorio-dev/filament-public-links/blob/main/LICENSE.md)
+[![PHP](https://img.shields.io/packagist/dependency-v/victorio/filament-public-links/php)](https://github.com/victorio-dev/filament-public-links/blob/main/composer.json)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/victorio-dev/filament-public-links/main/docs/images/relation-manager-dark.png">
@@ -193,7 +193,7 @@ Start at the top of this list and stop at the first step that does the job.
    Italian, Dutch and Brazilian Portuguese:
    `php artisan vendor:publish --tag="filament-public-links-translations"`. English and
    Hungarian are checked by hand; the other six are machine-assisted — corrections are very
-   welcome (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+   welcome (see [CONTRIBUTING.md](https://github.com/victorio-dev/filament-public-links/blob/main/CONTRIBUTING.md)).
 3. **Swappable classes** — brand per tenant with a resolver bound in `branding.resolver`; it
    receives the link (null on the 404 page) and returns a `Branding` (example below). The models
    are swappable too (`models.link`, `models.access`).
@@ -287,7 +287,7 @@ use Victorio\PublicLinks\Support\IpHasher;
 $hash = IpHasher::forRequest($request);   // HMAC-SHA256, the access log's key
 ```
 
-Please report vulnerabilities privately, as described in [SECURITY.md](SECURITY.md).
+Please report vulnerabilities privately, as described in [SECURITY.md](https://github.com/victorio-dev/filament-public-links/blob/main/SECURITY.md).
 
 ## Testing
 
@@ -297,10 +297,10 @@ composer test
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md). Breaking changes are listed under "Breaking" and only land in a
+See [CHANGELOG.md](https://github.com/victorio-dev/filament-public-links/blob/main/CHANGELOG.md). Breaking changes are listed under "Breaking" and only land in a
 new major version (or a new minor version before 1.0).
 
 ## License
 
-MIT — see [LICENSE.md](LICENSE.md). Part of the Victorio suite of Filament plugins; the paid
+MIT — see [LICENSE.md](https://github.com/victorio-dev/filament-public-links/blob/main/LICENSE.md). Part of the Victorio suite of Filament plugins; the paid
 packages build on this one.
