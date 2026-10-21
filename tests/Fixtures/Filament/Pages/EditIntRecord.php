@@ -11,6 +11,7 @@ use Victorio\PublicLinks\Data\IssuedPublicLink;
 use Victorio\PublicLinks\Filament\Actions\IssuePublicLinkAction;
 use Victorio\PublicLinks\Models\PublicLink;
 use Victorio\PublicLinks\Tests\Fixtures\Filament\IntRecordResource;
+use Victorio\PublicLinks\Tests\Fixtures\Filament\ShareCopyAction;
 use Victorio\PublicLinks\Tests\Fixtures\UlidRecord;
 
 final class EditIntRecord extends EditRecord
@@ -33,6 +34,8 @@ final class EditIntRecord extends EditRecord
                 )->issue())
                 ->linkOwnedUsing(fn (Model $record, PublicLink $link): bool => $link->linkable instanceof UlidRecord
                     && $link->linkable->name === 'Copy of '.$record->getAttribute('name')),
+            // A subclass with its own name and defaults.
+            ShareCopyAction::make(),
         ];
     }
 }

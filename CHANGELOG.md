@@ -21,7 +21,8 @@ Links speak your customer's language, and other packages can build on them.
   The 404 and 410 pages follow the same rule, and right-to-left languages get `dir="rtl"`.
 - **Build on the "New public link" action.** `IssuePublicLinkAction` can issue a link to another
   model than the record (`->issueUsing()`, `->linkOwnedUsing()`), show only some form fields
-  (`->fields([...])`) and use your own headings (`->modalHeading()`, `->urlModalHeading()`).
+  (`->fields([...])`) and use your own headings (`->modalHeading()`, `->urlModalHeading()`). It is
+  no longer final: extend it to ship a pre-configured variant as your own action class.
 - **Copy link and Access log** (`CopyPublicLinkAction`, `ViewAccessLogAction`) are public API, for
   your own tables of links.
 - **Match your records with the access log.** `IpHasher::forRequest($request)` gives the same

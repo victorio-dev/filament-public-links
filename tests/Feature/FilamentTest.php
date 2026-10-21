@@ -13,12 +13,14 @@ use function Pest\Laravel\actingAs;
 
 use Victorio\PublicLinks\Events\PublicLinkCreated;
 use Victorio\PublicLinks\Events\PublicLinkRevoked;
+use Victorio\PublicLinks\Filament\Actions\IssuePublicLinkAction;
 use Victorio\PublicLinks\Filament\RelationManagers\PublicLinksRelationManager;
 use Victorio\PublicLinks\Models\PublicLink;
 use Victorio\PublicLinks\Models\PublicLinkAccess;
 use Victorio\PublicLinks\PublicLinkRegistry;
 use Victorio\PublicLinks\PublicLinksPlugin;
 use Victorio\PublicLinks\Tests\Fixtures\Filament\Pages\EditIntRecord;
+use Victorio\PublicLinks\Tests\Fixtures\Filament\ShareCopyAction;
 use Victorio\PublicLinks\Tests\Fixtures\Handlers\ShowRecord;
 use Victorio\PublicLinks\Tests\Fixtures\IntRecord;
 use Victorio\PublicLinks\Tests\Fixtures\IntRecordPolicy;
@@ -569,5 +571,33 @@ describe('issuing for another model', function (): void {
         editPage($quote)
             ->call('mountAction', 'issueForCopy', ['link' => $foreign->link->getKey()], ['filamentPublicLinksUrl' => true])
             ->assertMountedActionModalDontSee($foreign->url);
+    });
+    it('can be extended into an action class of its own', function (): void {
+        $record = IntRecord::create(['name' => 'Quote']);
+
+        editPage($record)->mountAction('shareCopy')
+            ->assertMountedActionModalSee(['Share with a colleague', 'Expires in'])
+            ->assertMountedActionModalDontSee(['Usage limit', 'Language']);
+
+        $page = editPage($record)->callAction('shareCopy', data: ['purpose' => 'view', 'expiry' => '7'])->assertHasNoErrors();
+
+        $link = $record->publicLinks()->sole();
+        $page->assertMountedActionModalSee((string) $link->url());
+    });
+
+    it('lets configureUsing() reach subclasses, whose own defaults win unless it is important', function (): void {
+        $record = IntRecord::create(['name' => 'Quote']);
+        $share = fn (IssuePublicLinkAction $action): IssuePublicLinkAction => $action->label('Share');
+
+        IssuePublicLinkAction::configureUsing($share, during: fn (): mixed => editPage($record)
+            ->assertActionHasLabel('shareCopy', 'New public link'));
+
+        IssuePublicLinkAction::configureUsing($share, during: fn (): mixed => editPage($record)
+            ->assertActionHasLabel('shareCopy', 'Share')
+            ->assertActionHasLabel('issuePublicLink', 'Share'), isImportant: true);
+
+        ShareCopyAction::configureUsing($share, during: fn (): mixed => editPage($record)
+            ->assertActionHasLabel('shareCopy', 'Share')
+            ->assertActionHasLabel('issuePublicLink', 'New public link'));
     });
 });

@@ -41,8 +41,15 @@ use Victorio\PublicLinks\Support\PublicLinksConfig;
  *         ->issueUsing(fn (Model $record, array $data, Closure $pending): IssuedPublicLink =>
  *             $pending($record->seal(...), 'approval')->issue())
  *         ->linkOwnedUsing(fn (Model $record, PublicLink $link): bool => …);
+ *
+ * Extension point: not final, so a package can ship a pre-configured variant as its own action
+ * class (filament-acceptance's SendForApprovalAction does). Override getDefaultName() and
+ * setUp(), call parent::setUp() first, and configure through the public methods above; the
+ * private state is not part of the API. configureUsing() on this class reaches subclasses too,
+ * but Filament runs it before the subclass's setUp(), so the subclass's defaults win; configure
+ * the subclass itself, or pass `isImportant: true`.
  */
-final class IssuePublicLinkAction extends Action
+class IssuePublicLinkAction extends Action
 {
     private const string LINK_ARGUMENT = 'link';
 
