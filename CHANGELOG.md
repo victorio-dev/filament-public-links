@@ -7,42 +7,41 @@ marked `@internal`.
 
 ## [Unreleased]
 
+Links speak your customer's language, and other packages can build on them.
+
 ### Added
 
-- `CopyPublicLinkAction` and `ViewAccessLogAction` are public API: use them as row actions in
-  your own Filament tables of `PublicLink` records (for example links that belong to a related
-  model). Previously `@internal`; their behaviour is unchanged.
-- `Support\IpHasher` is public API: `IpHasher::hash($ip)` and `IpHasher::forRequest($request)`
-  return the same HMAC the access log stores, so other packages can record a matching IP hash.
-  The algorithm and key derivation are now part of the contract.
-- `PublicLinkVisit::$access`: handlers receive the access row written for the current request.
-- Six more languages: German, Spanish, French, Italian, Dutch and Brazilian Portuguese (machine
-  assisted; English and Hungarian are checked by hand). Corrections are welcome.
-- `->locale('de')` when issuing a link: its public pages (and the handler) use that language.
-  Without it, the visitor's browser language among `locales.supported` decides, then the app
-  locale; `locales.accept_language = false` ignores the browser. The 404 page follows the
-  browser, then the app. The Filament form offers a language, proposing the record's
-  (`publicLinkLocale()` on the model) or the app's.
-- Right-to-left languages (`locales.rtl`) get `dir="rtl"` on the public pages.
-- `IssuePublicLinkAction` can issue a link to another model than the record, with the same form,
-  URL modal and permissions: `->issueUsing()` (gets the form data and a pre-configured
-  `PendingPublicLink` factory), `->linkOwnedUsing()` (which links the URL modal may show) and
-  `->fields([...])` (which form fields to show).
-- `IssuePublicLinkAction::modalHeading()` and `->urlModalHeading()` set the headings of the form
-  and of the URL step (a text or a translation key).
-
-### Upgrading
-
-- A new migration adds the nullable `locale` column to the links table:
-  `php artisan vendor:publish --tag="filament-public-links-migrations"`, then `php artisan migrate`.
+- **Eight languages.** German, Spanish, French, Italian, Dutch and Brazilian Portuguese join
+  English and Hungarian. English and Hungarian are checked by hand, the other six are
+  machine-assisted — corrections are welcome.
+- **A link remembers its language.** `->locale('de')` when issuing a link, or the new language
+  field of the "New public link" form, which proposes the record's own language (return it from
+  `publicLinkLocale()` on your model). Without one, the visitor's browser language decides among
+  the supported ones, then your app's; switch the browser off with `locales.accept_language`.
+  The 404 and 410 pages follow the same rule, and right-to-left languages get `dir="rtl"`.
+- **Build on the "New public link" action.** `IssuePublicLinkAction` can issue a link to another
+  model than the record (`->issueUsing()`, `->linkOwnedUsing()`), show only some form fields
+  (`->fields([...])`) and use your own headings (`->modalHeading()`, `->urlModalHeading()`).
+- **Copy link and Access log** (`CopyPublicLinkAction`, `ViewAccessLogAction`) are public API, for
+  your own tables of links.
+- **Match your records with the access log.** `IpHasher::forRequest($request)` gives the same
+  IP hash the access log stores, and a handler receives the request's access row as
+  `$visit->access`.
 
 ### Changed
 
-- Requires `victorio/support` `^0.3`. The internal `Relations\StringKeyedMorphMany` and
-  `Support\ModelKey` are gone; the package uses `Victorio\Support\Database\*` instead (they
-  were `@internal`, so this is not a breaking change).
-- The access row of a POST action is written **before** the handler runs (it was written after).
-  It therefore exists even when the handler throws, and the handler gets it as `$visit->access`.
+- For a POST action, the access row is now written before your handler runs, so it exists even
+  when the handler throws.
+- Requires `victorio/support` `^0.3`.
+
+### Upgrading
+
+1. `composer update victorio/filament-public-links victorio/support`
+2. Publish the new migration (it adds a nullable `locale` column to the links table) and run it:
+   `php artisan vendor:publish --tag="filament-public-links-migrations"`, then
+   `php artisan migrate`.
+3. If you published the translations, publish them again or add the new keys (the form's
+   language field); the six new languages need no action.
 
 ## [0.1.0] - 2026-10-20
 
