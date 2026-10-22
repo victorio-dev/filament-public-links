@@ -7,6 +7,12 @@ marked `@internal`.
 
 ## [Unreleased]
 
+### Fixed
+
+- A link expiry given in another timezone than the app's (for example `Europe/Budapest` while the
+  app runs in UTC) is now stored as that moment. It used to be stored as the same clock time in the
+  app timezone, so the link expired hours early or late.
+
 ## [0.2.0] - 2026-10-21
 
 Links speak your customer's language, and other packages can build on them.

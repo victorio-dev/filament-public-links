@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Carbon;
@@ -9,6 +10,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+
+use function Pest\Laravel\get;
+
 use Victorio\PublicLinks\Events\PublicLinkCreated;
 use Victorio\PublicLinks\Exceptions\ExpiryTooFar;
 use Victorio\PublicLinks\Exceptions\InsecureTokenConfiguration;
@@ -212,4 +216,41 @@ it('refuses a token length below 32 bytes, at issue time and at boot', function 
     expect(fn () => $record->publicLink('view')->issue())->toThrow(InsecureTokenConfiguration::class)
         ->and(fn () => (new PublicLinksServiceProvider(app()))->packageBooted())->toThrow(InsecureTokenConfiguration::class)
         ->and(PublicLink::query()->count())->toBe(0);
+});
+
+describe('an expiry in another timezone than the app\'s', function (): void {
+    // The app runs in UTC (Testbench); test times are given in UTC, because older Carbon versions
+    // take a test "now" in another timezone as the default timezone.
+    it('is stored as the same moment, not the same clock time', function (string $given, string $timezone, string $utc): void {
+        Carbon::setTestNow('2026-10-20 10:00:00');
+
+        $issued = IntRecord::create(['name' => 'Quote'])->publicLink('view')
+            ->expiresAt(CarbonImmutable::parse($given, $timezone))
+            ->issue();
+        $stored = PublicLink::query()->whereKey($issued->link->getKey())->sole()->expires_at;
+
+        expect($stored?->getTimestamp())->toBe(CarbonImmutable::parse($utc, 'UTC')->getTimestamp())
+            ->and($stored?->toDateTimeString())->toBe($utc)
+            ->and($issued->link->expires_at?->getTimestamp())->toBe(CarbonImmutable::parse($utc, 'UTC')->getTimestamp());
+    })->with([
+        'Budapest, summer time' => ['2026-10-24 23:59:59', 'Europe/Budapest', '2026-10-24 21:59:59'],
+        'Budapest, after the clocks go back' => ['2026-10-26 23:59:59', 'Europe/Budapest', '2026-10-26 22:59:59'],
+        'New York, summer time' => ['2026-10-31 18:00:00', 'America/New_York', '2026-10-31 22:00:00'],
+        'New York, after the clocks go back' => ['2026-11-02 18:00:00', 'America/New_York', '2026-11-02 23:00:00'],
+    ]);
+
+    it('expires at that moment', function (string $timezone): void {
+        Carbon::setTestNow('2026-10-20 10:00:00');
+        // The end of 2026-10-26 in that timezone (Budapest after its clock change).
+        $expiresAt = CarbonImmutable::parse('2026-10-26 23:59:59', $timezone);
+        $issued = IntRecord::create(['name' => 'Quote'])->publicLink('view')->expiresAt($expiresAt)->issue();
+
+        Carbon::setTestNow($expiresAt->utc()->subSecond());
+        expect($issued->link->fresh()?->isUsable())->toBeTrue();
+        get('/p/'.$issued->token)->assertOk();
+
+        Carbon::setTestNow($expiresAt->utc()->addSecond());
+        expect($issued->link->fresh()?->isUsable())->toBeFalse();
+        get('/p/'.$issued->token)->assertStatus(410);
+    })->with(['Europe/Budapest', 'America/New_York']);
 });

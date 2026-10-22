@@ -65,6 +65,10 @@ final class PendingPublicLink
         return $this;
     }
 
+    /**
+     * The moment the link stops opening, in any timezone: it is converted to the app timezone
+     * before it is stored, so the same moment is kept, not the same clock time.
+     */
     public function expiresAt(DateTimeInterface $expiresAt): self
     {
         $this->expiresAt = CarbonImmutable::instance($expiresAt);
@@ -225,7 +229,15 @@ final class PendingPublicLink
             throw ExpiryTooFar::beyond($expiresAt, $maxTtlDays);
         }
 
-        return $expiresAt;
+        // Eloquent stores a date's clock time as it is, so it is converted to the app timezone first.
+        return $expiresAt->setTimezone(self::appTimezone());
+    }
+
+    private static function appTimezone(): string
+    {
+        $timezone = config('app.timezone');
+
+        return is_string($timezone) && $timezone !== '' ? $timezone : 'UTC';
     }
 
     private function currentTenant(): ?Model
