@@ -7,6 +7,8 @@ marked `@internal`.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-22
+
 ### Fixed
 
 - A link expiry given in another timezone than the app's (for example `Europe/Budapest` while the
